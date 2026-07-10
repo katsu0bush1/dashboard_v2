@@ -1,0 +1,105 @@
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>123鶴橋店 機種一覧</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+        <style>
+        :root {
+          --bg: #0f1923; --card: #1a2735; --border: #2a3f52;
+          --text: #e0e6ed; --sub: #8899aa; --accent: #4fc3f7;
+          --green: #66bb6a; --red: #ef5350; --yellow: #ffd54f;
+          --blue: #42a5f5;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+          font-family: -apple-system, 'Helvetica Neue', sans-serif;
+          background: var(--bg); color: var(--text);
+          font-size: 14px; line-height: 1.5;
+          -webkit-font-smoothing: antialiased;
+          padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 12px; }
+        .header {
+          text-align: center; padding: 16px 0 8px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 12px;
+        }
+        .header h1 { font-size: 18px; font-weight: 700; }
+        .header .sub { color: var(--sub); font-size: 12px; margin-top: 4px; }
+        .nav {
+          display: flex; gap: 6px; overflow-x: auto; padding: 8px 0;
+          margin-bottom: 12px; -webkit-overflow-scrolling: touch;
+        }
+        .nav a {
+          flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+          background: var(--card); color: var(--sub); text-decoration: none;
+          font-size: 13px; border: 1px solid var(--border);
+          white-space: nowrap;
+        }
+        .nav a.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+        .card {
+          background: var(--card); border-radius: 12px;
+          padding: 14px; margin-bottom: 12px;
+          border: 1px solid var(--border);
+        }
+        .card h2 { font-size: 15px; margin-bottom: 10px; color: var(--accent); }
+        .card h3 { font-size: 13px; margin: 8px 0 4px; color: var(--sub); }
+        table {
+          width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        th {
+          text-align: left; padding: 6px 4px; color: var(--sub);
+          border-bottom: 1px solid var(--border); font-weight: 500;
+          font-size: 11px; white-space: nowrap;
+        }
+        td {
+          padding: 8px 4px; border-bottom: 1px solid rgba(42,63,82,0.5);
+          white-space: nowrap;
+        }
+        .plus { color: var(--green); }
+        .minus { color: var(--red); }
+        .badge {
+          display: inline-block; padding: 2px 8px; border-radius: 10px;
+          font-size: 11px; font-weight: 600;
+        }
+        .badge-high { background: rgba(102,187,106,0.2); color: var(--green); }
+        .badge-mid { background: rgba(255,213,79,0.2); color: var(--yellow); }
+        .badge-low { background: rgba(239,83,80,0.2); color: var(--red); }
+        .chart-wrap { position: relative; width: 100%; height: 250px; margin: 8px 0; }
+        .kpi-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .kpi {
+          flex: 1; background: var(--card); border-radius: 10px;
+          padding: 12px; text-align: center;
+          border: 1px solid var(--border);
+        }
+        .kpi .value { font-size: 22px; font-weight: 700; }
+        .kpi .label { font-size: 11px; color: var(--sub); margin-top: 2px; }
+        .tag {
+          display: inline-block; padding: 2px 6px; border-radius: 4px;
+          font-size: 11px; margin: 1px;
+        }
+        .updated { text-align: center; color: var(--sub); font-size: 11px; padding: 12px; }
+
+.tabs{display:flex;gap:3px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:20;flex-wrap:wrap;}
+.tab{flex:1;min-width:66px;padding:9px 2px;text-align:center;border-radius:8px;background:var(--card);color:var(--sub);font-size:11px;cursor:pointer;border:1px solid var(--border);user-select:none;}
+.tab.active{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+/* パネルは初期表示のまま（parse時に可視）→Chart.jsが正しいサイズで初期化。
+   load後にJSで非activeを畳む。canvasは一度描画済みなので再表示でサイズ維持 */
+.tabpane{display:block;}
+.tabpane.tab-hidden{display:none;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.detail-grid .kpi{padding:10px;}
+.unit-strong{background:rgba(102,187,106,0.1);}
+.unit-weak{background:rgba(239,83,80,0.1);}
+.crumb{font-size:12px;color:var(--sub);margin-bottom:8px;}
+
+        </style>
+        </head>
+        <body>
+        <div class="container">
+<div class="header"><h1>123鶴橋店 機種個別</h1><div class="sub">主要6機種の台番号×日付分析</div></div><div class="crumb"><a href="index.html" style="color:var(--accent)">TOP</a> &gt; <a href="hall_10.html" style="color:var(--accent)">ホール</a> &gt; <span style="color:var(--text)">機種一覧</span></div><div class="card"><h2>機種を選択</h2><a href="hall_10_machine_10.html" style="display:block;padding:12px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text)"><span style="font-weight:700;color:var(--accent)">L東京喰種</span> <span style="font-size:11px;color:var(--sub)">L東京喰種 / 17台</span></a><a href="hall_10_machine_328.html" style="display:block;padding:12px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text)"><span style="font-weight:700;color:var(--accent)">甲鉄城のカバネリ 海門決戦</span> <span style="font-size:11px;color:var(--sub)">スマスロ 甲鉄城のカバネリ 海門決戦 / 21台</span></a><a href="hall_10_machine_25.html" style="display:block;padding:12px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text)"><span style="font-weight:700;color:var(--accent)">モンキーターンV</span> <span style="font-size:11px;color:var(--sub)">スマスロモンキーターンV / 14台</span></a><a href="hall_10_machine_5.html" style="display:block;padding:12px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text)"><span style="font-weight:700;color:var(--accent)">ヴァルヴレイヴ2</span> <span style="font-size:11px;color:var(--sub)">Lパチスロ革命機ヴァルヴレイヴ2 / 13台</span></a><a href="hall_10_machine_850.html" style="display:block;padding:12px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text)"><span style="font-weight:700;color:var(--accent)">ヨルムンガンド</span> <span style="font-size:11px;color:var(--sub)">スマスロヨルムンガンド / 7台</span></a><a href="hall_10_machine_306.html" style="display:block;padding:12px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text)"><span style="font-weight:700;color:var(--accent)">攻殻機動隊</span> <span style="font-size:11px;color:var(--sub)">スマスロ 攻殻機動隊 / 3台</span></a></div><div class="updated">最終更新: 2026/07/10 22:02</div>
+</div>
+</body>
+</html>

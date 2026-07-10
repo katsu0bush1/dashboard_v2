@@ -1,0 +1,246 @@
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>ヨルムンガンド - 123+N大阪本店</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+        <style>
+        :root {
+          --bg: #0f1923; --card: #1a2735; --border: #2a3f52;
+          --text: #e0e6ed; --sub: #8899aa; --accent: #4fc3f7;
+          --green: #66bb6a; --red: #ef5350; --yellow: #ffd54f;
+          --blue: #42a5f5;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+          font-family: -apple-system, 'Helvetica Neue', sans-serif;
+          background: var(--bg); color: var(--text);
+          font-size: 14px; line-height: 1.5;
+          -webkit-font-smoothing: antialiased;
+          padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 12px; }
+        .header {
+          text-align: center; padding: 16px 0 8px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 12px;
+        }
+        .header h1 { font-size: 18px; font-weight: 700; }
+        .header .sub { color: var(--sub); font-size: 12px; margin-top: 4px; }
+        .nav {
+          display: flex; gap: 6px; overflow-x: auto; padding: 8px 0;
+          margin-bottom: 12px; -webkit-overflow-scrolling: touch;
+        }
+        .nav a {
+          flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+          background: var(--card); color: var(--sub); text-decoration: none;
+          font-size: 13px; border: 1px solid var(--border);
+          white-space: nowrap;
+        }
+        .nav a.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+        .card {
+          background: var(--card); border-radius: 12px;
+          padding: 14px; margin-bottom: 12px;
+          border: 1px solid var(--border);
+        }
+        .card h2 { font-size: 15px; margin-bottom: 10px; color: var(--accent); }
+        .card h3 { font-size: 13px; margin: 8px 0 4px; color: var(--sub); }
+        table {
+          width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        th {
+          text-align: left; padding: 6px 4px; color: var(--sub);
+          border-bottom: 1px solid var(--border); font-weight: 500;
+          font-size: 11px; white-space: nowrap;
+        }
+        td {
+          padding: 8px 4px; border-bottom: 1px solid rgba(42,63,82,0.5);
+          white-space: nowrap;
+        }
+        .plus { color: var(--green); }
+        .minus { color: var(--red); }
+        .badge {
+          display: inline-block; padding: 2px 8px; border-radius: 10px;
+          font-size: 11px; font-weight: 600;
+        }
+        .badge-high { background: rgba(102,187,106,0.2); color: var(--green); }
+        .badge-mid { background: rgba(255,213,79,0.2); color: var(--yellow); }
+        .badge-low { background: rgba(239,83,80,0.2); color: var(--red); }
+        .chart-wrap { position: relative; width: 100%; height: 250px; margin: 8px 0; }
+        .kpi-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .kpi {
+          flex: 1; background: var(--card); border-radius: 10px;
+          padding: 12px; text-align: center;
+          border: 1px solid var(--border);
+        }
+        .kpi .value { font-size: 22px; font-weight: 700; }
+        .kpi .label { font-size: 11px; color: var(--sub); margin-top: 2px; }
+        .tag {
+          display: inline-block; padding: 2px 6px; border-radius: 4px;
+          font-size: 11px; margin: 1px;
+        }
+        .updated { text-align: center; color: var(--sub); font-size: 11px; padding: 12px; }
+
+.tabs{display:flex;gap:3px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:20;flex-wrap:wrap;}
+.tab{flex:1;min-width:66px;padding:9px 2px;text-align:center;border-radius:8px;background:var(--card);color:var(--sub);font-size:11px;cursor:pointer;border:1px solid var(--border);user-select:none;}
+.tab.active{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+/* パネルは初期表示のまま（parse時に可視）→Chart.jsが正しいサイズで初期化。
+   load後にJSで非activeを畳む。canvasは一度描画済みなので再表示でサイズ維持 */
+.tabpane{display:block;}
+.tabpane.tab-hidden{display:none;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.detail-grid .kpi{padding:10px;}
+.unit-strong{background:rgba(102,187,106,0.1);}
+.unit-weak{background:rgba(239,83,80,0.1);}
+.crumb{font-size:12px;color:var(--sub);margin-bottom:8px;}
+
+        </style>
+        </head>
+        <body>
+        <div class="container">
+<div class="header"><h1>スマスロヨルムンガンド</h1><div class="sub">123+N大阪本店 | 台番号別分析</div></div><div class="crumb"><a href="hall_3_machines.html" style="color:var(--accent)">機種一覧</a> &gt; <span style="color:var(--text)">ヨルムンガンド</span></div><div class="tabs"><div class="tab active" onclick="showTab(0)">🗓️ ヒートマップ</div><div class="tab" onclick="showTab(1)">📉 スランプ</div><div class="tab" onclick="showTab(2)">📈 台別成績</div><div class="tab" onclick="showTab(3)">📅 傾向</div><div class="tab" onclick="showTab(4)">🎯 今日狙う</div><div class="tab" onclick="showTab(5)">🎰 設定・据置</div><div class="tab" onclick="showTab(6)">📊 期間集計</div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--green)"><h2 style="color:var(--green)">🗓️ 台番号×日付 ヒートマップ</h2><div style="display:flex;gap:6px;margin-bottom:6px" id="hm_3_850_btns"><button onclick="switchHeat_hm_3_850('payout')" id="hm_3_850_b_payout" class="heatbtn active" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--accent);color:#000;font-weight:600;font-size:12px">差枚</button><button onclick="switchHeat_hm_3_850('ratio')" id="hm_3_850_b_ratio" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">出率</button><button onclick="switchHeat_hm_3_850('win')" id="hm_3_850_b_win" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">勝敗</button></div><p style="font-size:11px;color:var(--sub);margin-bottom:6px" id="hm_3_850_desc">直近22日。緑=プラス/赤=マイナス（濃いほど大）。横スクロール可</p><div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="font-size:10px;border-collapse:collapse" id="hm_3_850_table"><tbody id="hm_3_850_tbody"><tr id="hm_3_850_header"><th style="position:sticky;left:0;z-index:2;min-width:44px;cursor:pointer;user-select:none;background:var(--card)" onclick="sortCol_hm_3_850('unit')" id="hm_3_850_h_unit" title="台番号でソート">台 <span id="hm_3_850_a_unit" style="font-size:9px"></span></th><th style="min-width:42px;cursor:pointer;user-select:none;background:var(--card)" onclick="sortCol_hm_3_850('avg')" id="hm_3_850_avghdr" title="平均でソート"><span id="hm_3_850_avglabel">平均差枚</span> <span id="hm_3_850_a_avg" style="font-size:9px">▼</span></th><th style="min-width:36px;cursor:pointer;user-select:none" onclick="sortCol_hm_3_850('win')" id="hm_3_850_h_win" title="勝率でソート">勝率 <span id="hm_3_850_a_win" style="font-size:9px"></span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">6/9</span><br><span style="color:var(--sub);font-size:9px">火</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">6/8</span><br><span style="color:var(--sub);font-size:9px">月</span></th><th style="min-width:34px;text-align:center"><span style="color:#ef5350">6/7</span><br><span style="color:#ef5350;font-size:9px">日</span></th><th style="min-width:34px;text-align:center"><span style="color:#4fc3f7">6/6</span><br><span style="color:#4fc3f7;font-size:9px">土</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">6/5</span><br><span style="color:var(--sub);font-size:9px">金</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">6/4</span><br><span style="color:var(--sub);font-size:9px">木</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">6/3</span><br><span style="color:var(--sub);font-size:9px">水</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">6/2</span><br><span style="color:var(--sub);font-size:9px">火</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">6/1</span><br><span style="color:var(--sub);font-size:9px">月</span></th><th style="min-width:34px;text-align:center"><span style="color:#ef5350">5/31</span><br><span style="color:#ef5350;font-size:9px">日</span></th><th style="min-width:34px;text-align:center"><span style="color:#4fc3f7">5/30</span><br><span style="color:#4fc3f7;font-size:9px">土</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/29</span><br><span style="color:var(--sub);font-size:9px">金</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/28</span><br><span style="color:var(--sub);font-size:9px">木</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/27</span><br><span style="color:var(--sub);font-size:9px">水</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/26</span><br><span style="color:var(--sub);font-size:9px">火</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/25</span><br><span style="color:var(--sub);font-size:9px">月</span></th><th style="min-width:34px;text-align:center"><span style="color:#ef5350">5/24</span><br><span style="color:#ef5350;font-size:9px">日</span></th><th style="min-width:34px;text-align:center"><span style="color:#4fc3f7">5/23</span><br><span style="color:#4fc3f7;font-size:9px">土</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/22</span><br><span style="color:var(--sub);font-size:9px">金</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/21</span><br><span style="color:var(--sub);font-size:9px">木</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/20</span><br><span style="color:var(--sub);font-size:9px">水</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">5/19</span><br><span style="color:var(--sub);font-size:9px">火</span></th></tr><tr data-unit="1330"><td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:700">1330</td><td class="hm_3_850_avg" data-payout="952" data-ratio="101.95909090909093" data-win="64" style="text-align:right;font-weight:600;background:rgba(102,187,106,0.29);color:var(--text)">+952</td><td class="hm_3_850_wr" data-win="64" style="text-align:center;color:var(--sub)">64%</td><td class="hm_3_850_c" data-payout="113" data-ratio="103.1" style="text-align:right;background:rgba(102,187,106,0.14);color:var(--text)">+113</td><td class="hm_3_850_c" data-payout="-671" data-ratio="68.4" style="text-align:right;background:rgba(239,83,80,0.24);color:var(--text)">-671</td><td class="hm_3_850_c" data-payout="7295" data-ratio="147.0" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+7,295</td><td class="hm_3_850_c" data-payout="-3833" data-ratio="79.9" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-3,833</td><td class="hm_3_850_c" data-payout="2406" data-ratio="117.2" style="text-align:right;background:rgba(102,187,106,0.56);color:#fff">+2,406</td><td class="hm_3_850_c" data-payout="-956" data-ratio="66.1" style="text-align:right;background:rgba(239,83,80,0.30);color:var(--text)">-956</td><td class="hm_3_850_c" data-payout="130" data-ratio="100.9" style="text-align:right;background:rgba(102,187,106,0.14);color:var(--text)">+130</td><td class="hm_3_850_c" data-payout="-356" data-ratio="96.7" style="text-align:right;background:rgba(239,83,80,0.19);color:var(--text)">-356</td><td class="hm_3_850_c" data-payout="10885" data-ratio="144.4" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+10,885</td><td class="hm_3_850_c" data-payout="1851" data-ratio="109.0" style="text-align:right;background:rgba(102,187,106,0.46);color:#fff">+1,851</td><td class="hm_3_850_c" data-payout="-4041" data-ratio="72.1" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-4,041</td><td class="hm_3_850_c" data-payout="118" data-ratio="100.7" style="text-align:right;background:rgba(102,187,106,0.14);color:var(--text)">+118</td><td class="hm_3_850_c" data-payout="1184" data-ratio="105.9" style="text-align:right;background:rgba(102,187,106,0.34);color:var(--text)">+1,184</td><td class="hm_3_850_c" data-payout="4757" data-ratio="122.0" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+4,757</td><td class="hm_3_850_c" data-payout="3192" data-ratio="126.6" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+3,192</td><td class="hm_3_850_c" data-payout="-1199" data-ratio="94.1" style="text-align:right;background:rgba(239,83,80,0.34);color:var(--text)">-1,199</td><td class="hm_3_850_c" data-payout="-2539" data-ratio="82.7" style="text-align:right;background:rgba(239,83,80,0.59);color:#fff">-2,539</td><td class="hm_3_850_c" data-payout="1198" data-ratio="105.4" style="text-align:right;background:rgba(102,187,106,0.34);color:var(--text)">+1,198</td><td class="hm_3_850_c" data-payout="3436" data-ratio="119.9" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+3,436</td><td class="hm_3_850_c" data-payout="310" data-ratio="101.7" style="text-align:right;background:rgba(102,187,106,0.18);color:var(--text)">+310</td><td class="hm_3_850_c" data-payout="-2574" data-ratio="77.5" style="text-align:right;background:rgba(239,83,80,0.59);color:#fff">-2,574</td><td class="hm_3_850_c" data-payout="235" data-ratio="101.8" style="text-align:right;background:rgba(102,187,106,0.16);color:var(--text)">+235</td></tr><tr data-unit="1332"><td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:700">1332</td><td class="hm_3_850_avg" data-payout="144" data-ratio="94.94999999999999" data-win="45" style="text-align:right;font-weight:600;background:rgba(102,187,106,0.15);color:var(--text)">+144</td><td class="hm_3_850_wr" data-win="45" style="text-align:center;color:var(--sub)">45%</td><td class="hm_3_850_c" data-payout="7701" data-ratio="153.3" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+7,701</td><td class="hm_3_850_c" data-payout="-946" data-ratio="95.5" style="text-align:right;background:rgba(239,83,80,0.29);color:var(--text)">-946</td><td class="hm_3_850_c" data-payout="-2322" data-ratio="75.0" style="text-align:right;background:rgba(239,83,80,0.55);color:#fff">-2,322</td><td class="hm_3_850_c" data-payout="-1231" data-ratio="93.6" style="text-align:right;background:rgba(239,83,80,0.35);color:var(--text)">-1,231</td><td class="hm_3_850_c" data-payout="155" data-ratio="101.0" style="text-align:right;background:rgba(102,187,106,0.15);color:var(--text)">+155</td><td class="hm_3_850_c" data-payout="639" data-ratio="108.6" style="text-align:right;background:rgba(102,187,106,0.24);color:var(--text)">+639</td><td class="hm_3_850_c" data-payout="-3032" data-ratio="68.6" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-3,032</td><td class="hm_3_850_c" data-payout="-1378" data-ratio="47.1" style="text-align:right;background:rgba(239,83,80,0.37);color:var(--text)">-1,378</td><td class="hm_3_850_c" data-payout="1096" data-ratio="105.4" style="text-align:right;background:rgba(102,187,106,0.32);color:var(--text)">+1,096</td><td class="hm_3_850_c" data-payout="3132" data-ratio="114.7" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+3,132</td><td class="hm_3_850_c" data-payout="-1592" data-ratio="90.8" style="text-align:right;background:rgba(239,83,80,0.41);color:#fff">-1,592</td><td class="hm_3_850_c" data-payout="479" data-ratio="102.0" style="text-align:right;background:rgba(102,187,106,0.21);color:var(--text)">+479</td><td class="hm_3_850_c" data-payout="2923" data-ratio="113.5" style="text-align:right;background:rgba(102,187,106,0.66);color:#fff">+2,923</td><td class="hm_3_850_c" data-payout="-1846" data-ratio="72.4" style="text-align:right;background:rgba(239,83,80,0.46);color:#fff">-1,846</td><td class="hm_3_850_c" data-payout="-623" data-ratio="93.4" style="text-align:right;background:rgba(239,83,80,0.23);color:var(--text)">-623</td><td class="hm_3_850_c" data-payout="-1690" data-ratio="78.1" style="text-align:right;background:rgba(239,83,80,0.43);color:#fff">-1,690</td><td class="hm_3_850_c" data-payout="1491" data-ratio="108.3" style="text-align:right;background:rgba(102,187,106,0.39);color:var(--text)">+1,491</td><td class="hm_3_850_c" data-payout="-3004" data-ratio="80.0" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-3,004</td><td class="hm_3_850_c" data-payout="1484" data-ratio="109.3" style="text-align:right;background:rgba(102,187,106,0.39);color:var(--text)">+1,484</td><td class="hm_3_850_c" data-payout="5104" data-ratio="124.3" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+5,104</td><td class="hm_3_850_c" data-payout="-2013" data-ratio="71.6" style="text-align:right;background:rgba(239,83,80,0.49);color:#fff">-2,013</td><td class="hm_3_850_c" data-payout="-1354" data-ratio="82.4" style="text-align:right;background:rgba(239,83,80,0.37);color:var(--text)">-1,354</td></tr><tr data-unit="1331"><td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:700">1331</td><td class="hm_3_850_avg" data-payout="-625" data-ratio="91.92272727272727" data-win="36" style="text-align:right;font-weight:600;background:rgba(239,83,80,0.23);color:var(--text)">-625</td><td class="hm_3_850_wr" data-win="36" style="text-align:center;color:var(--sub)">36%</td><td class="hm_3_850_c" data-payout="-1974" data-ratio="79.2" style="text-align:right;background:rgba(239,83,80,0.48);color:#fff">-1,974</td><td class="hm_3_850_c" data-payout="1643" data-ratio="119.4" style="text-align:right;background:rgba(102,187,106,0.42);color:#fff">+1,643</td><td class="hm_3_850_c" data-payout="-2858" data-ratio="83.3" style="text-align:right;background:rgba(239,83,80,0.64);color:#fff">-2,858</td><td class="hm_3_850_c" data-payout="-2977" data-ratio="81.0" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-2,977</td><td class="hm_3_850_c" data-payout="-2308" data-ratio="84.1" style="text-align:right;background:rgba(239,83,80,0.54);color:#fff">-2,308</td><td class="hm_3_850_c" data-payout="-1609" data-ratio="72.5" style="text-align:right;background:rgba(239,83,80,0.41);color:#fff">-1,609</td><td class="hm_3_850_c" data-payout="-847" data-ratio="92.0" style="text-align:right;background:rgba(239,83,80,0.28);color:var(--text)">-847</td><td class="hm_3_850_c" data-payout="1323" data-ratio="120.1" style="text-align:right;background:rgba(102,187,106,0.36);color:var(--text)">+1,323</td><td class="hm_3_850_c" data-payout="5185" data-ratio="120.2" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+5,185</td><td class="hm_3_850_c" data-payout="2912" data-ratio="115.4" style="text-align:right;background:rgba(102,187,106,0.65);color:#fff">+2,912</td><td class="hm_3_850_c" data-payout="2135" data-ratio="111.0" style="text-align:right;background:rgba(102,187,106,0.51);color:#fff">+2,135</td><td class="hm_3_850_c" data-payout="-3116" data-ratio="72.9" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-3,116</td><td class="hm_3_850_c" data-payout="-2271" data-ratio="64.6" style="text-align:right;background:rgba(239,83,80,0.54);color:#fff">-2,271</td><td class="hm_3_850_c" data-payout="-2824" data-ratio="70.2" style="text-align:right;background:rgba(239,83,80,0.64);color:#fff">-2,824</td><td class="hm_3_850_c" data-payout="-2122" data-ratio="75.6" style="text-align:right;background:rgba(239,83,80,0.51);color:#fff">-2,122</td><td class="hm_3_850_c" data-payout="-1656" data-ratio="84.8" style="text-align:right;background:rgba(239,83,80,0.42);color:#fff">-1,656</td><td class="hm_3_850_c" data-payout="-2250" data-ratio="92.1" style="text-align:right;background:rgba(239,83,80,0.53);color:#fff">-2,250</td><td class="hm_3_850_c" data-payout="-4178" data-ratio="72.6" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-4,178</td><td class="hm_3_850_c" data-payout="3374" data-ratio="117.3" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+3,374</td><td class="hm_3_850_c" data-payout="1579" data-ratio="107.2" style="text-align:right;background:rgba(102,187,106,0.41);color:#fff">+1,579</td><td class="hm_3_850_c" data-payout="-1009" data-ratio="85.7" style="text-align:right;background:rgba(239,83,80,0.30);color:var(--text)">-1,009</td><td class="hm_3_850_c" data-payout="99" data-ratio="101.1" style="text-align:right;background:rgba(102,187,106,0.14);color:var(--text)">+99</td></tr></tbody></table></div><p style="font-size:10px;color:var(--sub);margin-top:4px">行=台番号（選択指標の降順）/ 列=日付（新しい順）。ボタンで指標切替＆自動ソート</p><script>
+        function heatColor_hm_3_850(val, kind) {
+          if (val === null || val === '' || isNaN(val)) return ['transparent','#445'];
+          val = parseFloat(val);
+          let norm;
+          if (kind === 'ratio') norm = Math.max(-1, Math.min(1, (val-100)/15));
+          else if (kind === 'win') norm = Math.max(-1, Math.min(1, (val-50)/50));
+          else norm = Math.max(-1, Math.min(1, val/3000));
+          let a, bg;
+          if (norm >= 0) { a = 0.12 + 0.55*norm; bg = 'rgba(102,187,106,'+a.toFixed(2)+')'; }
+          else { a = 0.12 + 0.55*(-norm); bg = 'rgba(239,83,80,'+a.toFixed(2)+')'; }
+          let fg = Math.abs(norm) > 0.5 ? '#fff' : '#e0e6ed';
+          return [bg, fg];
+        }
+        function fmtCell_hm_3_850(val, kind) {
+          if (val === null || val === '' || isNaN(val)) return '-';
+          val = parseFloat(val);
+          if (kind === 'ratio') return val.toFixed(0)+'%';
+          if (kind === 'win') return val.toFixed(0)+'%';
+          return (val>=0?'+':'')+val.toLocaleString();
+        }
+        window.hm_3_850_sortCol = 'avg';
+        window.hm_3_850_sortDir = 'desc';
+        // 列ソート（スプレッドシート風。同じ列再クリックで昇降反転）
+        function sortCol_hm_3_850(col) {
+          if (window.hm_3_850_sortCol === col) {
+            window.hm_3_850_sortDir = (window.hm_3_850_sortDir === 'desc') ? 'asc' : 'desc';
+          } else {
+            window.hm_3_850_sortCol = col;
+            window.hm_3_850_sortDir = (col === 'unit') ? 'asc' : 'desc';
+          }
+          applySort_hm_3_850();
+          updateSortIndicators_hm_3_850();
+        }
+        function getSortVal_hm_3_850(row, col) {
+          if (col === 'unit') return parseFloat(row.dataset.unit);
+          if (col === 'win') {
+            var w = row.querySelector('.hm_3_850_wr');
+            return w ? parseFloat(w.dataset.win) : -1e9;
+          }
+          // avg: 現在の指標に応じた平均
+          var kind = window.hm_3_850_kind || 'payout';
+          var c = row.querySelector('.hm_3_850_avg');
+          if (!c) return -1e9;
+          var v = (kind==='ratio')?c.dataset.ratio:(kind==='win')?c.dataset.win:c.dataset.payout;
+          v = parseFloat(v);
+          return isNaN(v) ? -1e9 : v;
+        }
+        function applySort_hm_3_850() {
+          var tbody = document.getElementById('hm_3_850_tbody');
+          var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr')).filter(function(r){return r.id !== 'hm_3_850_header';});
+          var col = window.hm_3_850_sortCol, dir = window.hm_3_850_sortDir;
+          rows.sort(function(a,b){
+            var va = getSortVal_hm_3_850(a, col), vb = getSortVal_hm_3_850(b, col);
+            return (dir==='asc') ? (va - vb) : (vb - va);
+          });
+          rows.forEach(function(r){ tbody.appendChild(r); });
+        }
+        function updateSortIndicators_hm_3_850() {
+          ['unit','avg','win'].forEach(function(c){
+            var el = document.getElementById('hm_3_850_a_'+c);
+            if (!el) return;
+            el.textContent = (window.hm_3_850_sortCol === c) ? (window.hm_3_850_sortDir==='desc'?'▼':'▲') : '';
+          });
+        }
+        function switchHeat_hm_3_850(kind, doSort) {
+          window.hm_3_850_kind = kind;
+          // 指標切替時は avg列基準で再ソート
+          if (doSort !== false) {
+            window.hm_3_850_sortCol = 'avg';
+            window.hm_3_850_sortDir = 'desc';
+            applySort_hm_3_850();
+            updateSortIndicators_hm_3_850();
+          }
+          // セル更新
+          document.querySelectorAll('.hm_3_850_c').forEach(function(td){
+            let v = (kind==='ratio') ? td.dataset.ratio
+                  : (kind==='win') ? (td.dataset.payout==='' ? '' : (parseFloat(td.dataset.payout)>0?100:0))
+                  : td.dataset.payout;
+            let [bg,fg] = heatColor_hm_3_850(v, kind);
+            td.style.background = bg; td.style.color = fg;
+            td.textContent = (kind==='win')
+              ? (td.dataset.payout===''?'-':(parseFloat(td.dataset.payout)>0?'○':'×'))
+              : fmtCell_hm_3_850(v, kind);
+          });
+          // 平均列更新
+          document.querySelectorAll('.hm_3_850_avg').forEach(function(td){
+            let v = (kind==='ratio')?td.dataset.ratio:(kind==='win')?td.dataset.win:td.dataset.payout;
+            let [bg,fg] = heatColor_hm_3_850(v, kind);
+            td.style.background = bg; td.style.color = fg;
+            td.textContent = fmtCell_hm_3_850(v, kind);
+          });
+          // ヘッダラベル（▲▼spanを壊さないよう label spanのみ更新）・説明・ボタン
+          var avglabel = document.getElementById('hm_3_850_avglabel');
+          var desc = document.getElementById('hm_3_850_desc');
+          if (kind==='ratio') { avglabel.textContent='平均出率'; desc.textContent='出率(%)。100%超=緑（機械割超え）'; }
+          else if (kind==='win') { avglabel.textContent='勝率'; desc.textContent='○=勝ち日/×=負け日'; }
+          else { avglabel.textContent='平均差枚'; desc.textContent='差枚。緑=プラス/赤=マイナス（濃いほど大）'; }
+          ['payout','ratio','win'].forEach(function(k){
+            var b=document.getElementById('hm_3_850_b_'+k);
+            if(k===kind){b.style.background='var(--accent)';b.style.color='#000';b.style.fontWeight='600';}
+            else{b.style.background='var(--card)';b.style.color='var(--sub)';b.style.fontWeight='400';}
+          });
+        }
+        switchHeat_hm_3_850('payout');  // 初期描画
+        </script></div></div><div class="tabpane"><div class="card"><h2>📉 台別スランプグラフ（当日の出玉推移）</h2><p class="note">台番号と日付を選ぶと、その日の差枚推移を表示。緑=プラス着地/赤=マイナス着地</p><div style="display:flex;gap:8px;margin-bottom:8px"><select id="slUnit" style="flex:1;padding:8px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px"><option value="1330">No.1330</option><option value="1331">No.1331</option><option value="1332">No.1332</option></select><select id="slDate" style="flex:1;padding:8px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px"></select></div><div class="chart-wrap" style="height:240px"><canvas id="slumpChart"></canvas></div><p class="note" id="slInfo"></p><script>const SLUMP={"1330": {"2026-06-09": {"p": 113, "g": [0, 0, -523, 61, 194, 22, 116]}, "2026-06-08": {"p": -671, "g": [0, 0, -67, -695, -667]}, "2026-06-07": {"p": 7295, "g": [0, 0, 311, 355, 1155, 2044, 2711, 3111, 3466, 4133, 4444, 4711, 6266, 7511, 7955, 7777, 7600, 7111, 7333]}, "2026-06-06": {"p": -3833, "g": [0, 0, -89, -423, -1023, -1689, -1845, -2089, -1845, -2200, -2112, -2067, -2489, -3089, -2956, -3312, -3689, -3645, -3823]}, "2026-06-05": {"p": 2406, "g": [0, 0, -267, -423, -800, -867, -1400, -756, -1023, -1489, -1200, -1378, -1845, -2178, -2312, -1600, 88, 2422]}, "2026-06-04": {"p": -956, "g": [0, 0, -67, 88, 66, -267, -300, -406, -456, -467, -956]}, "2026-06-03": {"p": 130, "g": [0, 0, 577, 2244, 2288, 2111, 2044, 2000, 1444, 1000, 711, 600, 577, 488, -67, 0, 133]}, "2026-06-02": {"p": -356, "g": [0, 0, -312, -489, -378, -734, -845, -978, -845, -1356, -1445, -2023, -2356, -1578, -845, -356]}, "2026-06-01": {"p": 10885, "g": [0, 0, 66, 466, 2333, 3333, 5666, 6333, 6600, 7400, 7333, 6733, 7333, 7600, 7866, 8066, 9133, 10400, 11266, 10866, 10933]}, "2026-05-31": {"p": 1851, "g": [0, 0, -578, -778, 266, 1866, 1466, 1200, 1644, 2311, 1933, 1844, 2044, 1555, 1288, 733, 555, 711, 1177, 1866]}, "2026-05-30": {"p": -4041, "g": [0, 0, -1267, -1167, -1767, -2100, -2500, -2867, -2734, -2534, -2634, -2867, -3134, -3601, -4001, -3901, -3967, -4034]}, "2026-05-29": {"p": 118, "g": [0, 0, -512, -1112, -1023, -1623, -1467, -1845, -1600, -2134, -2089, -1845, -1512, -912, -667, -934, -600, -512, -534, 133]}, "2026-05-28": {"p": 1184, "g": [0, 0, -678, -800, -634, -745, -923, -967, -1245, -823, 188, 122, -45, -134, -512, -545, 233, 855, 400, 22, 655, 1188]}, "2026-05-27": {"p": 4757, "g": [0, 0, 766, 733, 333, -334, 66, -200, -300, 400, 1400, 2366, 2333, 2266, 2766, 3200, 3433, 3066, 2733, 2466, 2666, 4466, 4766]}, "2026-05-26": {"p": 3192, "g": [0, 0, -501, 200, 2066, 3066, 4166, 3933, 4166, 4100, 4333, 3900, 3600, 3333, 3200]}, "2026-05-25": {"p": -1199, "g": [0, 0, -1089, -867, -1023, -1045, -1223, -1556, -1978, -2489, -2645, -2178, -1712, -1756, -1578, -1267, -1734, -2178, -2200, -1889, -1000, -1200]}, "2026-05-24": {"p": -2539, "g": [0, 0, -289, -423, -712, -556, -845, -1467, -1934, -1400, -1600, -1556, -1334, -1534, -1600, -2267, -2889, -2400, -2534]}, "2026-05-23": {"p": 1198, "g": [0, 0, -912, -1312, -1556, -1800, -2134, -2334, -2178, -2845, -3378, -3000, -3334, -3623, -3489, -2534, -2334, -1689, -800, -156, 1222, 1200]}, "2026-05-22": {"p": 3436, "g": [0, 0, -156, 911, 2711, 2133, 2244, 2555, 3422, 3288, 2888, 2777, 2400, 2911, 3044, 2733, 2133, 1911, 2088, 2800, 3444]}, "2026-05-21": {"p": 310, "g": [0, 0, -723, -278, -323, -456, -723, -712, -456, -134, -356, -467, -934, -1378, -667, -12, 55, 811, 1255, 1033, 644, 455, 311]}, "2026-05-20": {"p": -2574, "g": [0, 0, -178, -489, -200, 400, -156, -889, -845, -1178, -1712, -1934, -2156, -2556]}, "2026-05-19": {"p": 235, "g": [0, 0, -334, -778, -178, 688, 1233, 1555, 911, 322, 622, 922, 855, 477, 244]}}, "1331": {"2026-06-09": {"p": -1974, "g": [0, 0, -289, 88, 388, -212, -489, -1112, -1523, -1900, -1967]}, "2026-06-08": {"p": 1643, "g": [0, 0, -12, -400, -767, -1412, -1800, -1689, -1800, -1923, -634, 1644]}, "2026-06-07": {"p": -2858, "g": [0, 0, -912, -67, -45, -534, -289, -778, -1023, -1089, -956, -1600, -1689, -2023, -1934, -2489, -2845, -2712, -2845]}, "2026-06-06": {"p": -2977, "g": [0, 0, 66, -400, -600, -934, -978, -1600, -2089, -2556, -3023, -3089, -3067, -3689, -3734, -3978, -3712, -2978, -2956, -2978]}, "2026-06-05": {"p": -2308, "g": [0, 0, -223, -289, -178, -578, -1000, -1645, -1667, -2023, -2289, -2534, -2045, -2067, -2223, -1512, -2089, -2156, -2289]}, "2026-06-04": {"p": -1609, "g": [0, 0, -589, -834, -867, -934, -1145, -1300, -1189, -1345, -1612]}, "2026-06-03": {"p": -847, "g": [0, 0, -589, -989, -1267, -1589, -1478, -1900, -1956, -1700, -1789, -934, -1067, -912, -845]}, "2026-06-02": {"p": 1323, "g": [0, 0, 244, 888, 1177, 1677, 1400, 1322]}, "2026-06-01": {"p": 5185, "g": [0, 0, 533, 888, 1422, 1288, 1422, 1066, 1555, 1022, 1511, 1688, 2577, 4177, 5866, 6133, 6933, 7066, 6977, 6888, 6444, 6088, 5777, 5377, 5200]}, "2026-05-31": {"p": 2912, "g": [0, 0, -1023, -845, -489, -467, -489, -645, -756, -1378, -978, -112, 1022, 2266, 3688, 3244, 3488, 3422, 3177, 2911]}, "2026-05-30": {"p": 2135, "g": [0, 0, -334, -645, -956, -1067, -956, -934, -378, -156, -534, -289, 133, 444, 1022, 1577, 1555, 1888, 1688, 1511, 1155, 1555, 2133]}, "2026-05-29": {"p": -3116, "g": [0, 0, -1356, -1867, -2112, -2378, -2712, -2934, -3356, -3445, -3600, -3778, -2978, -3112]}, "2026-05-28": {"p": -2271, "g": [0, 0, -178, 133, -178, -312, -623, -1134, -1712, -2112, -2378, -2578, -2267]}, "2026-05-27": {"p": -2824, "g": [0, 0, -623, -800, -1467, -2000, -2289, -2378, -2800, -2823, -2645, -2756, -2823]}, "2026-05-26": {"p": -2122, "g": [0, 0, -267, -89, -467, -512, -712, -1089, -1312, -1778, -1867, -2112]}, "2026-05-25": {"p": -1656, "g": [0, 0, -534, -645, -756, -267, -378, -800, -956, -1312, -1556, -2089, -2156, -1689, -1645]}, "2026-05-24": {"p": -2250, "g": [0, 0, -645, -600, -356, -712, -1023, -556, -800, -956, -1289, -1978, -1245, -934, -1600, -1623, -1378, -2000, -2623, -2889, -3223, -3600, -3178, -2245]}, "2026-05-23": {"p": -4178, "g": [0, 0, -1167, -1901, -2267, -1767, -2034, -2634, -3134, -3367, -3701, -4234, -4834, -4200, -4167]}, "2026-05-22": {"p": 3374, "g": [0, 0, 311, 1466, 3288, 3177, 3111, 2844, 3000, 3555, 3177, 3600, 3666, 3311, 3044, 2822, 2733, 2666, 2422, 2400, 3200, 3377]}, "2026-05-21": {"p": 1579, "g": [0, 0, -1045, -1778, -2178, -1800, -267, 2155, 1822, 1666, 1644, 2022, 2044, 1444, 1333, 2266, 2600, 2511, 2377, 1800, 1600]}, "2026-05-20": {"p": -1009, "g": [0, 0, -600, -1000, -1200, -623, -689, -645, -823, -878, -1000]}, "2026-05-19": {"p": 99, "g": [0, 0, -178, -617, -50, 261, 94, 250, -62, -289, -400, -500, -445, 100]}}, "1332": {"2026-06-09": {"p": 7701, "g": [0, 0, -312, 844, 1777, 3600, 4266, 5111, 6311, 6488, 6577, 6400, 6222, 5911, 6800, 7777, 7600, 7733]}, "2026-06-08": {"p": -946, "g": [0, 0, -267, 311, 288, 266, -45, -156, 977, 2333, 1977, 1666, 1155, 1244, 911, 844, 733, 200, -423, 44, -400, -1178, -1089, -1112, -934]}, "2026-06-07": {"p": -2322, "g": [0, 0, -689, -1089, -1178, -1867, -1756, -1778, -1912, -1934, -2334, -2223, -2312]}, "2026-06-06": {"p": -1231, "g": [0, 0, -467, -423, -645, -1000, -1356, -1689, -1778, -2045, -1978, -1445, -712, -689, -178, -156, -312, -423, -889, -1267, -1223]}, "2026-06-05": {"p": 155, "g": [0, 0, -900, -1500, -1812, -1378, -1800, -1723, -1223, -656, -178, -256, -234, -445, -489, 366, 211, 166, 155]}, "2026-06-04": {"p": 639, "g": [0, 0, -228, -495, -589, -873, -173, 611, 811, 577, 638]}, "2026-06-03": {"p": -3032, "g": [0, 0, -867, -1356, -1823, -2312, -2156, -2756, -2912, -2978, -2912, -3023]}, "2026-06-02": {"p": -1378, "g": [0, 0, -578, -723, -1245, -1378]}, "2026-06-01": {"p": 1096, "g": [0, 0, -767, -667, -56, -689, 111, 688, 244, 122, -323, 33, -134, -189, 422, 1133, 1388, 1200, 800, 811, 1300, 1100]}, "2026-05-31": {"p": 3132, "g": [0, 0, -567, -1067, -1667, -2067, -1500, -1701, -2134, -2700, -2934, -3434, -3501, -3734, -4167, -4267, -4534, -4834, -4700, -3734, -2300, -967, 466, 3133]}, "2026-05-30": {"p": -1592, "g": [0, 0, -512, -467, -623, -267, -934, -1245, -845, -512, -1200, -1712, -2000, -2112, -2245, -1912, -1245, -1623, -1712, -1578]}, "2026-05-29": {"p": 479, "g": [0, 0, 633, 1211, 566, 1233, 811, 188, 833, 233, -312, -856, -689, -612, -712, -467, 377, 766, 533, 833, 144, -78, 477]}, "2026-05-28": {"p": 2923, "g": [0, 0, 1700, 2333, 1966, 1933, 1533, 2400, 2166, 1800, 1500, 2466, 3233, 4100, 4066, 3800, 3566, 3700, 3066, 3233, 2933]}, "2026-05-27": {"p": -1846, "g": [0, 0, 100, -189, -678, -723, -1134, -1400, -1556, -1823, -1845]}, "2026-05-26": {"p": -623, "g": [0, 0, -534, -800, -1156, -1289, -1889, -2045, -1645, -1400, -423, -623]}, "2026-05-25": {"p": -1690, "g": [0, 0, -1200, -1245, -1645, -2178, -2356, -1556, -1689]}, "2026-05-24": {"p": 1491, "g": [0, 0, -289, -489, -845, -1200, -912, -1289, -556, 377, 422, 66, -67, -423, -1089, -889, 133, 866, 2177, 1555, 1488]}, "2026-05-23": {"p": -3004, "g": [0, 0, -956, -1623, -1600, -2156, -2512, -2267, -2667, -3067, -3312, -3400, -3823, -3112, -3000]}, "2026-05-22": {"p": 1484, "g": [0, 0, -334, -867, -889, -1623, -1356, -1378, -1645, -1823, -1756, -2067, -2534, -2312, -534, 422, 155, 22, 311, 1488]}, "2026-05-21": {"p": 5104, "g": [0, 0, -89, 622, 1377, 977, 711, 755, 355, 44, 88, 1600, 2888, 4400, 5688, 7200, 6577, 6266, 6177, 5688, 5155, 5111]}, "2026-05-20": {"p": -2013, "g": [0, 0, -445, -534, -800, -1067, -1489, -1312, -1378, -1689, -1889, -2000]}, "2026-05-19": {"p": -1354, "g": [0, 0, -445, -634, -734, -556, -1167, -1278, -1356]}}};const SUNITS=["1330", "1331", "1332"];
+    let slumpChart=null;
+    function slFillDates(){const u=document.getElementById('slUnit').value;const sel=document.getElementById('slDate');
+      const dates=Object.keys(SLUMP[u]).sort().reverse();sel.innerHTML=dates.map(d=>'<option value="'+d+'">'+d.slice(5)+'</option>').join('');}
+    function slDraw(){const u=document.getElementById('slUnit').value,d=document.getElementById('slDate').value;
+      const rec=(SLUMP[u]||{})[d];if(!rec)return;const pts=rec.g;const fin=pts[pts.length-1];
+      const col=fin>=0?'#66bb6a':'#ef5350';const bg=fin>=0?'rgba(102,187,106,0.12)':'rgba(239,83,80,0.12)';
+      const labels=pts.map((_,i)=>i);if(slumpChart)slumpChart.destroy();
+      slumpChart=new Chart(document.getElementById('slumpChart'),{type:'line',data:{labels:labels,datasets:[{data:pts,borderColor:col,backgroundColor:bg,fill:true,tension:0.25,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'差枚'+(c.raw>=0?'+':'')+c.raw}}},scales:{x:{grid:{display:false},ticks:{color:'#8899aa',maxTicksLimit:8}},y:{grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#8899aa'}}}}});
+      document.getElementById('slInfo').textContent='No.'+u+' '+d+' 着地差枚 '+(rec.p>=0?'+':'')+rec.p.toLocaleString();}
+    document.getElementById('slUnit').addEventListener('change',()=>{slFillDates();slDraw();});
+    document.getElementById('slDate').addEventListener('change',slDraw);
+    slFillDates();slDraw();
+    </script></div></div><div class="tabpane"><div class="detail-grid"><div class="kpi"><div class="value plus">+157</div><div class="label">平均差枚</div></div><div class="kpi"><div class="value">43.0%</div><div class="label">勝率(補正)</div></div><div class="kpi"><div class="value">3</div><div class="label">台数</div></div><div class="kpi"><div class="value plus" style="font-size:16px">No.1330</div><div class="label">最強台</div></div></div><div class="card"><h2>差枚推移（直近30日）</h2><div class="chart-wrap"><canvas id="trendChart"></canvas></div><script>
+        new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:["05-11", "05-12", "05-13", "05-14", "05-15", "05-16", "05-17", "05-18", "05-19", "05-20", "05-21", "05-22", "05-23", "05-24", "05-25", "05-26", "05-27", "05-28", "05-29", "05-30", "05-31", "06-01", "06-02", "06-03", "06-04", "06-05", "06-06", "06-07", "06-08", "06-09"],datasets:[{label:'平均差枚',data:[1051.0, 778.0, 346.0, 251.0, 2013.0, -1249.0, -344.0, 338.0, -340.0, -1865.0, 2331.0, 2765.0, -1995.0, -1099.0, -1515.0, 149.0, 29.0, 612.0, -840.0, -1166.0, 2632.0, 5722.0, -137.0, -1250.0, -642.0, 84.0, -2500.0, 705.0, 9.0, 1947.0],borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,0.1)',fill:true,tension:0.3,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#8899aa',maxRotation:45,font:{size:10}}},y:{grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#8899aa'}}}}});
+        </script></div><div class="card"><h2>台番号別 補正差枚</h2><div class="chart-wrap" style="height:180px"><canvas id="unitChart"></canvas></div><script>
+        new Chart(document.getElementById('unitChart'),{type:'bar',data:{labels:["No.1330", "No.1332", "No.1331"],datasets:[{data:[549.2, 69.0, -388.4],backgroundColor:["rgba(102,187,106,0.7)", "rgba(102,187,106,0.7)", "rgba(239,83,80,0.7)"],borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#8899aa'}},y:{grid:{display:false},ticks:{color:'#e0e6ed',font:{size:11}}}}}});
+        </script></div><div class="card"><h2>全台番号 成績一覧</h2><p style="font-size:11px;color:var(--sub);margin-bottom:6px">補正値: データ少→全体平均に縮小推定</p><table><tr><th>台番</th><th>日数</th><th>差枚</th><th>補正差枚</th><th>勝率</th><th>補正勝率</th><th>最大</th><th>最小</th></tr><tr class="unit-strong"><td style="font-weight:700;font-size:15px">No.1330</td><td style="color:var(--sub)">22</td><td class="plus">+952</td><td class="plus">+549</td><td>65.2%</td><td>52.5%</td><td class="plus" style="font-size:11px">+10,885</td><td class="minus" style="font-size:11px">-4,041</td></tr><tr><td style="font-weight:700;font-size:15px">No.1332</td><td style="color:var(--sub)">22</td><td class="plus">+144</td><td class="plus">+69</td><td>47.8%</td><td>42.1%</td><td class="plus" style="font-size:11px">+7,701</td><td class="minus" style="font-size:11px">-3,032</td></tr><tr class="unit-weak"><td style="font-weight:700;font-size:15px">No.1331</td><td style="color:var(--sub)">22</td><td class="minus">-625</td><td class="minus">-388</td><td>34.8%</td><td>34.4%</td><td class="plus" style="font-size:11px">+5,185</td><td class="minus" style="font-size:11px">-4,178</td></tr></table></div></div><div class="tabpane"><div class="card"><h2>📅 曜日別成績（この機種）</h2><p class="note">この機種が何曜に強いか。緑=平均プラス/赤=マイナス</p><div class="chart-wrap" style="height:200px"><canvas id="dowChart"></canvas></div><script>new Chart(document.getElementById("dowChart"),{type:"bar",data:{labels:["\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1", "\u571f", "\u65e5"],datasets:[{data:[1405.0, 405.0, -1029.0, 767.0, 670.0, -1947.0, 746.0],backgroundColor:["rgba(102,187,106,0.7)", "rgba(102,187,106,0.7)", "rgba(239,83,80,0.7)", "rgba(102,187,106,0.7)", "rgba(102,187,106,0.7)", "rgba(239,83,80,0.7)", "rgba(102,187,106,0.7)"],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const wr=[0.444, 0.5, 0.222, 0.667, 0.778, 0.222, 0.556],n=[9, 12, 9, 9, 9, 9, 9];return "差枚"+Math.round(c.raw)+" / 勝率"+(wr[c.dataIndex]*100).toFixed(0)+"% / "+n[c.dataIndex]+"件";}}}},scales:{y:{grid:{color:"rgba(42,63,82,0.5)"},ticks:{color:"#8899aa"}},x:{grid:{display:false},ticks:{color:"#e0e6ed"}}}}});</script></div><div class="card"><h2>🎯 特定日 vs 通常日（この機種）</h2><p class="note">店の特定日=125のつく日。優遇されるか</p><table><tr><th>区分</th><th>件数</th><th>平均差枚</th><th>勝率</th></tr><tr><td>特定日</td><td>21</td><td class="plus">+1,697</td><td>71%</td></tr><tr><td>通常日</td><td>45</td><td class="minus">-562</td><td>38%</td></tr></table></div><div class="card"><h2>🔁 台番号リピート率</h2><p style="font-size:12px">ベースのプラス率 <b>48%</b> → 前日プラス台の翌日プラス率 <b>47%</b>（30件）<br>リフト <b>0.96x</b> → 中立（前日結果は翌日に影響薄い）</p><h3>プラス率の高い台番号（5日以上）</h3><table><tr><th>台番</th><th>日数</th><th>プラス率</th><th>平均差枚</th></tr><tr><td style="font-weight:700">No.1330</td><td>22</td><td>64%</td><td class="plus">+952</td></tr><tr><td style="font-weight:700">No.1332</td><td>22</td><td>46%</td><td class="plus">+144</td></tr><tr><td style="font-weight:700">No.1331</td><td>22</td><td>36%</td><td class="minus">-625</td></tr></table></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--yellow)"><h2 style="color:var(--yellow)">🎯 今日狙う台（2026-07-10予想）</h2><p class="note">店の傾向×台個別を最適化重みで合成し翌日の狙い目を選定。<b>前日以前のデータのみ使用（リークなし）</b>　実測: 選抜は当日平均を平均<b>+96枚</b>上回る(未来検証)</p><p class="note">現存台（最新日に稼働）の履歴が不足のため選定なし。新装・台移動の直後などで、数日データが貯まれば復活します</p></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--yellow)"><h2 style="color:var(--yellow)">🎰 設定推測・据え置き・連続性（直近14日）</h2><p style="font-size:12px;margin-bottom:8px">📌 据え置き傾向: <span style="color:var(--yellow)">中間（継続55%）</span>（母数22件）</p><table><tr><th>台番</th><th>推定設定</th><th>平均出率</th><th>合成確率</th><th>連続</th></tr><tr><td style="font-weight:700">1330</td><td style="color:#ffd54f;font-size:11px">設定3-4</td><td>104.0%</td><td style="font-size:11px">1/712</td><td><span style="color:var(--green)">+1連</span></td></tr><tr><td style="font-weight:700">1332</td><td style="color:#ef5350;font-size:11px">設定1-2</td><td>95.7%</td><td style="font-size:11px">1/759</td><td><span style="color:var(--green)">+1連</span></td></tr><tr><td style="font-weight:700">1331</td><td style="color:#ef5350;font-size:11px">設定1-2</td><td>90.8%</td><td style="font-size:11px">1/951</td><td><span style="color:var(--red)">−1連</span></td></tr></table><p style="font-size:10px;color:var(--sub);margin-top:4px">推定設定=出率ベース（理論値未登録）/ 合成確率=総G÷(BB+RB) / 連続=直近の連続勝敗</p></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--accent)"><h2 style="color:var(--accent)">📊 期間別 詳細集計</h2><p style="font-size:11px;color:var(--sub);margin-bottom:8px">基準日: 2026-06-09</p><table><tr><th>期間</th><th>延べ台</th><th>平均差枚</th><th>平均出率</th><th>平均G数</th><th>勝率</th><th>+5K台</th></tr><tr><td><b>1週間</b></td><td style="color:var(--sub)">24</td><td class="minus">-246</td><td class="minus">93.9%</td><td>3,754G</td><td>37.5%</td><td>2</td></tr><tr><td><b>2週間</b></td><td style="color:var(--sub)">45</td><td class="plus">+345</td><td class="minus">96.8%</td><td>4,613G</td><td>48.9%</td><td>4</td></tr><tr><td><b>1ヶ月</b></td><td style="color:var(--sub)">66</td><td class="plus">+157</td><td class="minus">96.3%</td><td>4,772G</td><td>48.5%</td><td>5</td></tr></table><h3 style="margin-top:12px">台別 出率推移（1週/2週/1ヶ月）</h3><p style="font-size:11px;color:var(--sub);margin-bottom:4px">出率100%超=機械割超え。3期間とも高い台=安定高設定</p><table><tr><th>台番</th><th>1週</th><th>2週</th><th>1月</th><th>月差枚</th><th>月総G</th><th>日数</th></tr><tr><td><b>1330</b></td><td class="minus">97.4%</td><td class="plus">104.0%</td><td class="plus">102.0%</td><td class="plus">+952</td><td style="font-size:11px">110,450</td><td style="color:var(--sub)">22</td></tr><tr><td><b>1332</b></td><td class="minus">92.8%</td><td class="minus">95.7%</td><td class="minus">95.0%</td><td class="plus">+144</td><td style="font-size:11px">104,454</td><td style="color:var(--sub)">22</td></tr><tr><td><b>1331</b></td><td class="minus">91.5%</td><td class="minus">90.8%</td><td class="minus">91.9%</td><td class="minus">-625</td><td style="font-size:11px">100,062</td><td style="color:var(--sub)">22</td></tr></table><p style="font-size:10px;color:var(--sub);margin-top:4px">🔥=1週/2週/1月すべて出率100%超</p><h3 style="margin-top:12px">日別 出率・総回転数（直近30日）</h3><div class="chart-wrap" style="height:200px"><canvas id="unitperiod_3_850"></canvas></div><script>
+            new Chart(document.getElementById('unitperiod_3_850'), {
+              type:'line',
+              data:{ labels:["05-19", "05-20", "05-21", "05-22", "05-23", "05-24", "05-25", "05-26", "05-27", "05-28", "05-29", "05-30", "05-31", "06-01", "06-02", "06-03", "06-04", "06-05", "06-06", "06-07", "06-08", "06-09"],
+                datasets:[
+                  { label:'出率(%)', data:[95.1, 78.3, 111.1, 115.5, 86.0, 94.4, 85.7, 98.5, 88.2, 94.7, 91.9, 91.3, 113.0, 123.3, 88.0, 87.2, 82.4, 100.8, 84.8, 101.8, 94.4, 111.9], borderColor:'#ffd54f',
+                     backgroundColor:'rgba(255,213,79,0.1)', fill:true, tension:0.3, pointRadius:2, yAxisID:'y' },
+                  { label:'総回転数', data:[9921, 8541, 20421, 17615, 17484, 20391, 12992, 10059, 12599, 16001, 18009, 17043, 20230, 23563, 6657, 11508, 5362, 14828, 17971, 13954, 10610, 9207], borderColor:'#8899aa',
+                     borderDash:[4,4], tension:0.3, pointRadius:0, yAxisID:'y2' }
+                ] },
+              options:{ responsive:true, maintainAspectRatio:false,
+                interaction:{intersect:false,mode:'index'},
+                plugins:{legend:{labels:{color:'#8899aa',font:{size:10}}}},
+                scales:{
+                  x:{grid:{display:false},ticks:{color:'#8899aa',font:{size:9},maxRotation:45}},
+                  y:{position:'left',grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#ffd54f'},title:{display:true,text:'出率%',color:'#ffd54f'}},
+                  y2:{position:'right',grid:{display:false},ticks:{color:'#8899aa'},title:{display:true,text:'総G',color:'#8899aa'}}
+                } }
+            });
+            </script></div></div><script>function showTab(i){document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("active",i===j));document.querySelectorAll(".tabpane").forEach((p,j)=>p.classList.toggle("tab-hidden",i!==j));window.dispatchEvent(new Event("resize"));}window.addEventListener("load",function(){showTab(0);});</script><div class="updated">最終更新: 2026/07/10 22:02</div>
+</div>
+</body>
+</html>
