@@ -1,0 +1,225 @@
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>機動戦士ガンダムユニコーン 覚醒 - スーパーホール</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+        <style>
+        :root {
+          --bg: #0f1923; --card: #1a2735; --border: #2a3f52;
+          --text: #e0e6ed; --sub: #8899aa; --accent: #4fc3f7;
+          --green: #66bb6a; --red: #ef5350; --yellow: #ffd54f;
+          --blue: #42a5f5;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+          font-family: -apple-system, 'Helvetica Neue', sans-serif;
+          background: var(--bg); color: var(--text);
+          font-size: 14px; line-height: 1.5;
+          -webkit-font-smoothing: antialiased;
+          padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 12px; }
+        .header {
+          text-align: center; padding: 16px 0 8px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 12px;
+        }
+        .header h1 { font-size: 18px; font-weight: 700; }
+        .header .sub { color: var(--sub); font-size: 12px; margin-top: 4px; }
+        .nav {
+          display: flex; gap: 6px; overflow-x: auto; padding: 8px 0;
+          margin-bottom: 12px; -webkit-overflow-scrolling: touch;
+        }
+        .nav a {
+          flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+          background: var(--card); color: var(--sub); text-decoration: none;
+          font-size: 13px; border: 1px solid var(--border);
+          white-space: nowrap;
+        }
+        .nav a.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+        .card {
+          background: var(--card); border-radius: 12px;
+          padding: 14px; margin-bottom: 12px;
+          border: 1px solid var(--border);
+        }
+        .card h2 { font-size: 15px; margin-bottom: 10px; color: var(--accent); }
+        .card h3 { font-size: 13px; margin: 8px 0 4px; color: var(--sub); }
+        table {
+          width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        th {
+          text-align: left; padding: 6px 4px; color: var(--sub);
+          border-bottom: 1px solid var(--border); font-weight: 500;
+          font-size: 11px; white-space: nowrap;
+        }
+        td {
+          padding: 8px 4px; border-bottom: 1px solid rgba(42,63,82,0.5);
+          white-space: nowrap;
+        }
+        .plus { color: var(--green); }
+        .minus { color: var(--red); }
+        .badge {
+          display: inline-block; padding: 2px 8px; border-radius: 10px;
+          font-size: 11px; font-weight: 600;
+        }
+        .badge-high { background: rgba(102,187,106,0.2); color: var(--green); }
+        .badge-mid { background: rgba(255,213,79,0.2); color: var(--yellow); }
+        .badge-low { background: rgba(239,83,80,0.2); color: var(--red); }
+        .chart-wrap { position: relative; width: 100%; height: 250px; margin: 8px 0; }
+        .kpi-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .kpi {
+          flex: 1; background: var(--card); border-radius: 10px;
+          padding: 12px; text-align: center;
+          border: 1px solid var(--border);
+        }
+        .kpi .value { font-size: 22px; font-weight: 700; }
+        .kpi .label { font-size: 11px; color: var(--sub); margin-top: 2px; }
+        .tag {
+          display: inline-block; padding: 2px 6px; border-radius: 4px;
+          font-size: 11px; margin: 1px;
+        }
+        .updated { text-align: center; color: var(--sub); font-size: 11px; padding: 12px; }
+
+.tabs{display:flex;gap:3px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:20;flex-wrap:wrap;}
+.tab{flex:1;min-width:66px;padding:9px 2px;text-align:center;border-radius:8px;background:var(--card);color:var(--sub);font-size:11px;cursor:pointer;border:1px solid var(--border);user-select:none;}
+.tab.active{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+/* パネルは初期表示のまま（parse時に可視）→Chart.jsが正しいサイズで初期化。
+   load後にJSで非activeを畳む。canvasは一度描画済みなので再表示でサイズ維持 */
+.tabpane{display:block;}
+.tabpane.tab-hidden{display:none;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.detail-grid .kpi{padding:10px;}
+.unit-strong{background:rgba(102,187,106,0.1);}
+.unit-weak{background:rgba(239,83,80,0.1);}
+.crumb{font-size:12px;color:var(--sub);margin-bottom:8px;}
+
+        </style>
+        </head>
+        <body>
+        <div class="container">
+<div class="header"><h1>Lパチスロ 機動戦士ガンダムユニコーン 覚醒DRIVE</h1><div class="sub">スーパーホール | 台番号別分析</div></div><div class="crumb"><a href="hall_36_machines.html" style="color:var(--accent)">機種一覧</a> &gt; <span style="color:var(--text)">機動戦士ガンダムユニコーン 覚醒</span></div><div class="tabs"><div class="tab active" onclick="showTab(0)">🗓️ ヒートマップ</div><div class="tab" onclick="showTab(1)">📉 スランプ</div><div class="tab" onclick="showTab(2)">📈 台別成績</div><div class="tab" onclick="showTab(3)">📅 傾向</div><div class="tab" onclick="showTab(4)">🎯 今日狙う</div><div class="tab" onclick="showTab(5)">🎰 設定・据置</div><div class="tab" onclick="showTab(6)">📊 期間集計</div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--green)"><h2 style="color:var(--green)">🗓️ 台番号×日付 ヒートマップ</h2><div style="display:flex;gap:6px;margin-bottom:6px" id="hm_36_866_btns"><button onclick="switchHeat_hm_36_866('payout')" id="hm_36_866_b_payout" class="heatbtn active" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--accent);color:#000;font-weight:600;font-size:12px">差枚</button><button onclick="switchHeat_hm_36_866('ratio')" id="hm_36_866_b_ratio" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">出率</button><button onclick="switchHeat_hm_36_866('win')" id="hm_36_866_b_win" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">勝敗</button></div><p style="font-size:11px;color:var(--sub);margin-bottom:6px" id="hm_36_866_desc">直近1日。緑=プラス/赤=マイナス（濃いほど大）。横スクロール可</p><div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="font-size:10px;border-collapse:collapse" id="hm_36_866_table"><tbody id="hm_36_866_tbody"><tr id="hm_36_866_header"><th style="position:sticky;left:0;z-index:2;min-width:44px;cursor:pointer;user-select:none;background:var(--card)" onclick="sortCol_hm_36_866('unit')" id="hm_36_866_h_unit" title="台番号でソート">台 <span id="hm_36_866_a_unit" style="font-size:9px"></span></th><th style="min-width:42px;cursor:pointer;user-select:none;background:var(--card)" onclick="sortCol_hm_36_866('avg')" id="hm_36_866_avghdr" title="平均でソート"><span id="hm_36_866_avglabel">平均差枚</span> <span id="hm_36_866_a_avg" style="font-size:9px">▼</span></th><th style="min-width:36px;cursor:pointer;user-select:none" onclick="sortCol_hm_36_866('win')" id="hm_36_866_h_win" title="勝率でソート">勝率 <span id="hm_36_866_a_win" style="font-size:9px"></span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">7/6</span><br><span style="color:var(--sub);font-size:9px">月</span></th></tr><tr data-unit="2397"><td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:700">2397</td><td class="hm_36_866_avg" data-payout="3340" data-ratio="131.9" data-win="100" style="text-align:right;font-weight:600;background:rgba(102,187,106,0.67);color:#fff">+3,340</td><td class="hm_36_866_wr" data-win="100" style="text-align:center;color:var(--sub)">100%</td><td class="hm_36_866_c" data-payout="3340" data-ratio="131.9" style="text-align:right;background:rgba(102,187,106,0.67);color:#fff">+3,340</td></tr><tr data-unit="2396"><td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:700">2396</td><td class="hm_36_866_avg" data-payout="-310" data-ratio="95.5" data-win="0" style="text-align:right;font-weight:600;background:rgba(239,83,80,0.18);color:var(--text)">-310</td><td class="hm_36_866_wr" data-win="0" style="text-align:center;color:var(--sub)">0%</td><td class="hm_36_866_c" data-payout="-310" data-ratio="95.5" style="text-align:right;background:rgba(239,83,80,0.18);color:var(--text)">-310</td></tr><tr data-unit="2398"><td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:700">2398</td><td class="hm_36_866_avg" data-payout="-1810" data-ratio="70.5" data-win="0" style="text-align:right;font-weight:600;background:rgba(239,83,80,0.45);color:#fff">-1,810</td><td class="hm_36_866_wr" data-win="0" style="text-align:center;color:var(--sub)">0%</td><td class="hm_36_866_c" data-payout="-1810" data-ratio="70.5" style="text-align:right;background:rgba(239,83,80,0.45);color:#fff">-1,810</td></tr></tbody></table></div><p style="font-size:10px;color:var(--sub);margin-top:4px">行=台番号（選択指標の降順）/ 列=日付（新しい順）。ボタンで指標切替＆自動ソート</p><script>
+        function heatColor_hm_36_866(val, kind) {
+          if (val === null || val === '' || isNaN(val)) return ['transparent','#445'];
+          val = parseFloat(val);
+          let norm;
+          if (kind === 'ratio') norm = Math.max(-1, Math.min(1, (val-100)/15));
+          else if (kind === 'win') norm = Math.max(-1, Math.min(1, (val-50)/50));
+          else norm = Math.max(-1, Math.min(1, val/3000));
+          let a, bg;
+          if (norm >= 0) { a = 0.12 + 0.55*norm; bg = 'rgba(102,187,106,'+a.toFixed(2)+')'; }
+          else { a = 0.12 + 0.55*(-norm); bg = 'rgba(239,83,80,'+a.toFixed(2)+')'; }
+          let fg = Math.abs(norm) > 0.5 ? '#fff' : '#e0e6ed';
+          return [bg, fg];
+        }
+        function fmtCell_hm_36_866(val, kind) {
+          if (val === null || val === '' || isNaN(val)) return '-';
+          val = parseFloat(val);
+          if (kind === 'ratio') return val.toFixed(0)+'%';
+          if (kind === 'win') return val.toFixed(0)+'%';
+          return (val>=0?'+':'')+val.toLocaleString();
+        }
+        window.hm_36_866_sortCol = 'avg';
+        window.hm_36_866_sortDir = 'desc';
+        // 列ソート（スプレッドシート風。同じ列再クリックで昇降反転）
+        function sortCol_hm_36_866(col) {
+          if (window.hm_36_866_sortCol === col) {
+            window.hm_36_866_sortDir = (window.hm_36_866_sortDir === 'desc') ? 'asc' : 'desc';
+          } else {
+            window.hm_36_866_sortCol = col;
+            window.hm_36_866_sortDir = (col === 'unit') ? 'asc' : 'desc';
+          }
+          applySort_hm_36_866();
+          updateSortIndicators_hm_36_866();
+        }
+        function getSortVal_hm_36_866(row, col) {
+          if (col === 'unit') return parseFloat(row.dataset.unit);
+          if (col === 'win') {
+            var w = row.querySelector('.hm_36_866_wr');
+            return w ? parseFloat(w.dataset.win) : -1e9;
+          }
+          // avg: 現在の指標に応じた平均
+          var kind = window.hm_36_866_kind || 'payout';
+          var c = row.querySelector('.hm_36_866_avg');
+          if (!c) return -1e9;
+          var v = (kind==='ratio')?c.dataset.ratio:(kind==='win')?c.dataset.win:c.dataset.payout;
+          v = parseFloat(v);
+          return isNaN(v) ? -1e9 : v;
+        }
+        function applySort_hm_36_866() {
+          var tbody = document.getElementById('hm_36_866_tbody');
+          var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr')).filter(function(r){return r.id !== 'hm_36_866_header';});
+          var col = window.hm_36_866_sortCol, dir = window.hm_36_866_sortDir;
+          rows.sort(function(a,b){
+            var va = getSortVal_hm_36_866(a, col), vb = getSortVal_hm_36_866(b, col);
+            return (dir==='asc') ? (va - vb) : (vb - va);
+          });
+          rows.forEach(function(r){ tbody.appendChild(r); });
+        }
+        function updateSortIndicators_hm_36_866() {
+          ['unit','avg','win'].forEach(function(c){
+            var el = document.getElementById('hm_36_866_a_'+c);
+            if (!el) return;
+            el.textContent = (window.hm_36_866_sortCol === c) ? (window.hm_36_866_sortDir==='desc'?'▼':'▲') : '';
+          });
+        }
+        function switchHeat_hm_36_866(kind, doSort) {
+          window.hm_36_866_kind = kind;
+          // 指標切替時は avg列基準で再ソート
+          if (doSort !== false) {
+            window.hm_36_866_sortCol = 'avg';
+            window.hm_36_866_sortDir = 'desc';
+            applySort_hm_36_866();
+            updateSortIndicators_hm_36_866();
+          }
+          // セル更新
+          document.querySelectorAll('.hm_36_866_c').forEach(function(td){
+            let v = (kind==='ratio') ? td.dataset.ratio
+                  : (kind==='win') ? (td.dataset.payout==='' ? '' : (parseFloat(td.dataset.payout)>0?100:0))
+                  : td.dataset.payout;
+            let [bg,fg] = heatColor_hm_36_866(v, kind);
+            td.style.background = bg; td.style.color = fg;
+            td.textContent = (kind==='win')
+              ? (td.dataset.payout===''?'-':(parseFloat(td.dataset.payout)>0?'○':'×'))
+              : fmtCell_hm_36_866(v, kind);
+          });
+          // 平均列更新
+          document.querySelectorAll('.hm_36_866_avg').forEach(function(td){
+            let v = (kind==='ratio')?td.dataset.ratio:(kind==='win')?td.dataset.win:td.dataset.payout;
+            let [bg,fg] = heatColor_hm_36_866(v, kind);
+            td.style.background = bg; td.style.color = fg;
+            td.textContent = fmtCell_hm_36_866(v, kind);
+          });
+          // ヘッダラベル（▲▼spanを壊さないよう label spanのみ更新）・説明・ボタン
+          var avglabel = document.getElementById('hm_36_866_avglabel');
+          var desc = document.getElementById('hm_36_866_desc');
+          if (kind==='ratio') { avglabel.textContent='平均出率'; desc.textContent='出率(%)。100%超=緑（機械割超え）'; }
+          else if (kind==='win') { avglabel.textContent='勝率'; desc.textContent='○=勝ち日/×=負け日'; }
+          else { avglabel.textContent='平均差枚'; desc.textContent='差枚。緑=プラス/赤=マイナス（濃いほど大）'; }
+          ['payout','ratio','win'].forEach(function(k){
+            var b=document.getElementById('hm_36_866_b_'+k);
+            if(k===kind){b.style.background='var(--accent)';b.style.color='#000';b.style.fontWeight='600';}
+            else{b.style.background='var(--card)';b.style.color='var(--sub)';b.style.fontWeight='400';}
+          });
+        }
+        switchHeat_hm_36_866('payout');  // 初期描画
+        </script></div></div><div class="tabpane"><div class="card"><h2>📉 台別スランプグラフ（当日の出玉推移）</h2><p class="note">台番号と日付を選ぶと、その日の差枚推移を表示。緑=プラス着地/赤=マイナス着地</p><div style="display:flex;gap:8px;margin-bottom:8px"><select id="slUnit" style="flex:1;padding:8px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px"><option value="2396">No.2396</option><option value="2397">No.2397</option><option value="2398">No.2398</option></select><select id="slDate" style="flex:1;padding:8px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px"></select></div><div class="chart-wrap" style="height:240px"><canvas id="slumpChart"></canvas></div><p class="note" id="slInfo"></p><script>const SLUMP={"2396": {"2026-07-06": {"p": -310, "g": [0, -20, -80, -670, -70, -10, 260, -240, -330]}}, "2397": {"2026-07-06": {"p": 3340, "g": [0, -410, 650, 1130, 1410, 790, 1070, 2720, 3840, 3130, 3390, 3320]}}, "2398": {"2026-07-06": {"p": -1810, "g": [0, 60, -250, -300, -370, -960, -1680, -1800, -1830]}}};const SUNITS=["2396", "2397", "2398"];
+    let slumpChart=null;
+    function slFillDates(){const u=document.getElementById('slUnit').value;const sel=document.getElementById('slDate');
+      const dates=Object.keys(SLUMP[u]).sort().reverse();sel.innerHTML=dates.map(d=>'<option value="'+d+'">'+d.slice(5)+'</option>').join('');}
+    function slDraw(){const u=document.getElementById('slUnit').value,d=document.getElementById('slDate').value;
+      const rec=(SLUMP[u]||{})[d];if(!rec)return;const pts=rec.g;const fin=pts[pts.length-1];
+      const col=fin>=0?'#66bb6a':'#ef5350';const bg=fin>=0?'rgba(102,187,106,0.12)':'rgba(239,83,80,0.12)';
+      const labels=pts.map((_,i)=>i);if(slumpChart)slumpChart.destroy();
+      slumpChart=new Chart(document.getElementById('slumpChart'),{type:'line',data:{labels:labels,datasets:[{data:pts,borderColor:col,backgroundColor:bg,fill:true,tension:0.25,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'差枚'+(c.raw>=0?'+':'')+c.raw}}},scales:{x:{grid:{display:false},ticks:{color:'#8899aa',maxTicksLimit:8}},y:{grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#8899aa'}}}}});
+      document.getElementById('slInfo').textContent='No.'+u+' '+d+' 着地差枚 '+(rec.p>=0?'+':'')+rec.p.toLocaleString();}
+    document.getElementById('slUnit').addEventListener('change',()=>{slFillDates();slDraw();});
+    document.getElementById('slDate').addEventListener('change',slDraw);
+    slFillDates();slDraw();
+    </script></div></div><div class="tabpane"><div class="detail-grid"><div class="kpi"><div class="value ">+0</div><div class="label">平均差枚</div></div><div class="kpi"><div class="value">0.0%</div><div class="label">勝率(補正)</div></div><div class="kpi"><div class="value">0</div><div class="label">台数</div></div></div><div class="card"><h2>差枚推移（直近30日）</h2><div class="chart-wrap"><canvas id="trendChart"></canvas></div><script>
+        new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:["06-10", "06-11", "06-12", "06-13", "06-14", "06-15", "06-16", "06-17", "06-18", "06-19", "06-20", "06-21", "06-22", "06-23", "06-24", "06-25", "06-26", "06-27", "06-28", "06-29", "06-30", "07-01", "07-02", "07-03", "07-04", "07-05", "07-06", "07-07", "07-08", "07-09"],datasets:[{label:'平均差枚',data:[-297.0, -2290.0, -1597.0, 4087.0, -1730.0, 1183.0, -2203.0, -753.0, 117.0, -1073.0, -720.0, 50.0, 1067.0, 237.0, -727.0, -683.0, -3903.0, -283.0, 3977.0, 2963.0, 7553.0, -1913.0, -1503.0, 417.0, 63.0, -1047.0, 407.0, -1080.0, -707.0, -53.0],borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,0.1)',fill:true,tension:0.3,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#8899aa',maxRotation:45,font:{size:10}}},y:{grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#8899aa'}}}}});
+        </script></div></div><div class="tabpane"><div class="card"><h2>📅 曜日別成績（この機種）</h2><p class="note">この機種が何曜に強いか。緑=平均プラス/赤=マイナス</p><div class="chart-wrap" style="height:200px"><canvas id="dowChart"></canvas></div><script>new Chart(document.getElementById("dowChart"),{type:"bar",data:{labels:["\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1", "\u571f", "\u65e5"],datasets:[{data:[407.0, 0, 0, 0, 0, 0, 0],backgroundColor:["rgba(102,187,106,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)"],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const wr=[0.333, 0, 0, 0, 0, 0, 0],n=[3, 0, 0, 0, 0, 0, 0];return "差枚"+Math.round(c.raw)+" / 勝率"+(wr[c.dataIndex]*100).toFixed(0)+"% / "+n[c.dataIndex]+"件";}}}},scales:{y:{grid:{color:"rgba(42,63,82,0.5)"},ticks:{color:"#8899aa"}},x:{grid:{display:false},ticks:{color:"#e0e6ed"}}}}});</script></div><div class="card"><h2>🎯 特定日 vs 通常日（この機種）</h2><p class="note">店の特定日=01269のつく日。優遇されるか</p><table><tr><th>区分</th><th>件数</th><th>平均差枚</th><th>勝率</th></tr><tr><td>特定日</td><td>3</td><td class="plus">+407</td><td>33%</td></tr></table></div><div class="card"><h2>🔁 台番号リピート率</h2><p style="font-size:12px">ベースのプラス率 <b>33%</b> → 前日プラス台の翌日プラス率 <b>0%</b>（0件）<br>リフト <b>0.00x</b> → 回収傾向（前日出た台は翌日回収されやすい）</p></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--yellow)"><h2 style="color:var(--yellow)">🎯 今日狙う台（2026-07-10予想）</h2><p class="note">店の傾向×台個別を最適化重みで合成し翌日の狙い目を選定。<b>前日以前のデータのみ使用（リークなし）</b>　実測: 選抜は当日平均を平均<b>+96枚</b>上回る(未来検証)</p><p class="note">現存台（最新日に稼働）の履歴が不足のため選定なし。新装・台移動の直後などで、数日データが貯まれば復活します</p></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--yellow)"><h2 style="color:var(--yellow)">🎰 設定推測・据え置き・連続性（直近14日）</h2><table><tr><th>台番</th><th>推定設定</th><th>平均出率</th><th>合成確率</th><th>連続</th></tr><tr><td style="font-weight:700">2397</td><td style="color:#66bb6a;font-size:11px">設定6濃厚</td><td>131.9%</td><td style="font-size:11px">1/498</td><td><span style="color:var(--green)">+1連</span></td></tr><tr><td style="font-weight:700">2396</td><td style="color:#ef5350;font-size:11px">設定1-2</td><td>95.5%</td><td style="font-size:11px">1/328</td><td><span style="color:var(--red)">−1連</span></td></tr><tr><td style="font-weight:700">2398</td><td style="color:#ef5350;font-size:11px">設定1-2</td><td>70.5%</td><td style="font-size:11px">1/409</td><td><span style="color:var(--red)">−1連</span></td></tr></table><p style="font-size:10px;color:var(--sub);margin-top:4px">推定設定=出率ベース（理論値未登録）/ 合成確率=総G÷(BB+RB) / 連続=直近の連続勝敗</p></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--accent)"><h2 style="color:var(--accent)">📊 期間別 詳細集計</h2><p style="font-size:11px;color:var(--sub);margin-bottom:8px">基準日: 2026-07-06</p><table><tr><th>期間</th><th>延べ台</th><th>平均差枚</th><th>平均出率</th><th>平均G数</th><th>勝率</th><th>+5K台</th></tr><tr><td><b>1週間</b></td><td style="color:var(--sub)">3</td><td class="plus">+407</td><td class="">99.3%</td><td>2,610G</td><td>33.3%</td><td>0</td></tr><tr><td><b>2週間</b></td><td style="color:var(--sub)">3</td><td class="plus">+407</td><td class="">99.3%</td><td>2,610G</td><td>33.3%</td><td>0</td></tr><tr><td><b>1ヶ月</b></td><td style="color:var(--sub)">3</td><td class="plus">+407</td><td class="">99.3%</td><td>2,610G</td><td>33.3%</td><td>0</td></tr></table><h3 style="margin-top:12px">台別 出率推移（1週/2週/1ヶ月）</h3><p style="font-size:11px;color:var(--sub);margin-bottom:4px">出率100%超=機械割超え。3期間とも高い台=安定高設定</p><table><tr><th>台番</th><th>1週</th><th>2週</th><th>1月</th><th>月差枚</th><th>月総G</th><th>日数</th></tr><tr><td><b>2397</b> 🔥</td><td class="plus">131.9%</td><td class="plus">131.9%</td><td class="plus">131.9%</td><td class="plus">+3,340</td><td style="font-size:11px">3,489</td><td style="color:var(--sub)">1</td></tr><tr><td><b>2396</b></td><td class="minus">95.5%</td><td class="minus">95.5%</td><td class="minus">95.5%</td><td class="minus">-310</td><td style="font-size:11px">2,299</td><td style="color:var(--sub)">1</td></tr><tr><td><b>2398</b></td><td class="minus">70.5%</td><td class="minus">70.5%</td><td class="minus">70.5%</td><td class="minus">-1,810</td><td style="font-size:11px">2,043</td><td style="color:var(--sub)">1</td></tr></table><p style="font-size:10px;color:var(--sub);margin-top:4px">🔥=1週/2週/1月すべて出率100%超</p></div></div><script>function showTab(i){document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("active",i===j));document.querySelectorAll(".tabpane").forEach((p,j)=>p.classList.toggle("tab-hidden",i!==j));window.dispatchEvent(new Event("resize"));}window.addEventListener("load",function(){showTab(0);});</script><div class="updated">最終更新: 2026/07/10 22:02</div>
+</div>
+</body>
+</html>
