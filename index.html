@@ -1,29 +1,37 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0f1923">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="スロット分析">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.webmanifest">
-<title>コンパクト・ダッシュボード</title><style>
+<meta name="theme-color" content="#0f1923"><title>コンパクト・ダッシュボード</title><style>
 :root{--bg:#0f1923;--card:#1a2735;--border:#2a3f52;--text:#e0e6ed;--sub:#8899aa;--accent:#4fc3f7;--yellow:#ffd54f;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:16px;}
 .container{max-width:600px;margin:0 auto;}
 h1{font-size:20px;text-align:center;padding:12px 0;}
-.sub{text-align:center;color:var(--sub);font-size:12px;margin-bottom:16px;}
-.hallcard{display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;text-decoration:none;color:var(--text);}
+.sub{text-align:center;color:var(--sub);font-size:12px;margin-bottom:12px;}
+.expbanner{background:#3a2f1a;border:1px solid #6a5a2a;color:var(--yellow);font-size:11px;
+  border-radius:8px;padding:8px 10px;margin-bottom:14px;text-align:center;}
+.hallcard{display:block;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;text-decoration:none;color:var(--text);}
 .hallname{font-size:17px;font-weight:700;color:var(--accent);margin-bottom:4px;}
-.evt{font-size:12px;color:var(--yellow);margin:6px 0;}
-.meta{font-size:11px;color:var(--sub);}
+.evt{font-size:11px;color:var(--yellow);margin:4px 0;}
 .arrow{float:right;color:var(--sub);font-size:18px;}
+.b1{border:1px solid;border-radius:8px;padding:8px 10px;margin-top:8px;background:#12202c;}
+.b1lab{font-weight:700;font-size:14px;}
+.b1sc{float:right;font-size:12px;color:var(--sub);}
+.b1re{font-size:11px;color:var(--sub);margin-top:4px;}
+.week{display:flex;gap:4px;margin-top:8px;}
+.d{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.dl{font-size:10px;color:var(--sub);}
+.db{width:100%;height:8px;border-radius:3px;}
 .updated{text-align:center;color:var(--sub);font-size:11px;padding:16px;}
+.navlink{display:block;text-align:center;color:var(--accent);font-size:13px;padding:10px;text-decoration:none;}
 </style></head><body><div class="container">
-<h1>🎰 コンパクト・ダッシュボード</h1><div class="sub">大阪市内5ホール / タブUI版</div>
-<a class="hallcard" href="hall_36.html"><span class="arrow">›</span><div class="hallname">スーパーホール</div><div class="evt">🗓️ 0のつく日、 6のつく日、 11日、 22日、 29日、 月と日がゾロ目の日</div><div class="meta">2022-01-01〜2026-08-09（622日） / slump機種 73</div></a>
-<a class="hallcard" href="hall_65.html"><span class="arrow">›</span><div class="hallname">楽園なんば店</div><div class="evt">🗓️ 1のつく日、 7のつく日、 8のつく日、 11日、 22日、 月と日がゾロ目の日</div><div class="meta">2025-01-28〜2026-08-09（356日） / slump機種 68</div></a>
-<a class="hallcard" href="hall_10.html"><span class="arrow">›</span><div class="hallname">123鶴橋店</div><div class="evt">🗓️ 1日、 11日、 21日、 27日</div><div class="meta">2026-01-01〜2026-08-09（220日） / slump機種 58</div></a>
-<a class="hallcard" href="hall_3.html"><span class="arrow">›</span><div class="hallname">123+N大阪本店</div><div class="evt">🗓️ 2のつく日、 5のつく日、 1日、 11日、 21日</div><div class="meta">2026-01-01〜2026-08-09（220日） / slump機種 63</div></a>
-<a class="hallcard" href="hall_11.html"><span class="arrow">›</span><div class="hallname">ARROW浪速店</div><div class="evt">🗓️ 5のつく日、 8のつく日</div><div class="meta">2025-02-21〜2026-08-09（331日） / slump機種 35</div></a>
-<div class="updated">最終更新: 2026/08/10 23:39</div></div></body></html>
+<h1>🎰 コンパクト・ダッシュボード</h1>
+<div class="sub">全機種・放出期待度(B1)・島図を統合</div>
+<div class="expbanner">📊 「本日の放出期待度」= ホール全台平均差枚の予測（曜日/日付/月末/直近から。リーク厳禁バックテスト held-out edge +76枚）。座る台は各ホールの「今日狙う」タブへ。</div>
+<a class="hallcard" href="hall_36.html"><span class="arrow">›</span><div class="hallname">スーパーホール</div><div class="evt">🗓️ 0のつく日、 6のつく日、 11日、 22日、 29日、 月と日がゾロ目の日</div><div class="b1" style="border-color:#66bb6a"><span class="b1lab" style="color:#66bb6a">🔥 放出期待</span><span class="b1sc">予測放出度 +75</span><div class="b1re">日付相性(-24) / 直近トレンド(+57)</div></div><div class="week"><span class="d" title="2026-08-10 +75"><span class="dl">月</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-11 +33"><span class="dl">火</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-12 +154"><span class="dl">水</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-13 +100"><span class="dl">木</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-14 +83"><span class="dl">金</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-15 +98"><span class="dl">土</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-16 +46"><span class="dl">日</span><span class="db" style="background:#66bb6a"></span></span></div></a>
+<a class="hallcard" href="hall_65.html"><span class="arrow">›</span><div class="hallname">楽園なんば店</div><div class="evt">🗓️ 1のつく日、 7のつく日、 8のつく日、 11日、 22日、 月と日がゾロ目の日</div><div class="b1" style="border-color:#ef5350"><span class="b1lab" style="color:#ef5350">❄️ 回収警戒</span><span class="b1sc">予測放出度 -226</span><div class="b1re">曜日相性(-107) / 日付相性(+25) / 直近トレンド(+22)</div></div><div class="week"><span class="d" title="2026-08-10 -226"><span class="dl">月</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-11 +123"><span class="dl">火</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-12 -191"><span class="dl">水</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-13 -183"><span class="dl">木</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-14 -245"><span class="dl">金</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-15 -174"><span class="dl">土</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-16 -76"><span class="dl">日</span><span class="db" style="background:#ef5350"></span></span></div></a>
+<a class="hallcard" href="hall_10.html"><span class="arrow">›</span><div class="hallname">123鶴橋店</div><div class="evt">🗓️ 1日、 11日、 21日、 27日</div><div class="b1" style="border-color:#ef5350"><span class="b1lab" style="color:#ef5350">❄️ 回収警戒</span><span class="b1sc">予測放出度 -263</span><div class="b1re">曜日相性(-151) / 日付相性(-72)</div></div><div class="week"><span class="d" title="2026-08-10 -263"><span class="dl">月</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-11 +687"><span class="dl">火</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-12 -155"><span class="dl">水</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-13 -201"><span class="dl">木</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-14 +60"><span class="dl">金</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-15 -142"><span class="dl">土</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-16 +189"><span class="dl">日</span><span class="db" style="background:#66bb6a"></span></span></div></a>
+<a class="hallcard" href="hall_3.html"><span class="arrow">›</span><div class="hallname">123+N大阪本店</div><div class="evt">🗓️ 2のつく日、 5のつく日、 1日、 11日、 21日</div><div class="b1" style="border-color:#ef5350"><span class="b1lab" style="color:#ef5350">❄️ 回収警戒</span><span class="b1sc">予測放出度 -121</span><div class="b1re">曜日相性(+84) / 日付相性(-163) / 直近トレンド(-94)</div></div><div class="week"><span class="d" title="2026-08-10 -121"><span class="dl">月</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-11 +548"><span class="dl">火</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-12 +173"><span class="dl">水</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-13 +46"><span class="dl">木</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-14 -18"><span class="dl">金</span><span class="db" style="background:#8899aa"></span></span><span class="d" title="2026-08-15 -163"><span class="dl">土</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-16 -164"><span class="dl">日</span><span class="db" style="background:#ef5350"></span></span></div></a>
+<a class="hallcard" href="hall_11.html"><span class="arrow">›</span><div class="hallname">ARROW浪速店</div><div class="evt">🗓️ 5のつく日、 8のつく日</div><div class="b1" style="border-color:#ef5350"><span class="b1lab" style="color:#ef5350">❄️ 回収警戒</span><span class="b1sc">予測放出度 -52</span><div class="b1re">曜日相性(-47) / 日付相性(+21) / 直近トレンド(-42)</div></div><div class="week"><span class="d" title="2026-08-10 -52"><span class="dl">月</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-11 -81"><span class="dl">火</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-12 +7"><span class="dl">水</span><span class="db" style="background:#8899aa"></span></span><span class="d" title="2026-08-13 -90"><span class="dl">木</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-14 -62"><span class="dl">金</span><span class="db" style="background:#ef5350"></span></span><span class="d" title="2026-08-15 +100"><span class="dl">土</span><span class="db" style="background:#66bb6a"></span></span><span class="d" title="2026-08-16 -91"><span class="dl">日</span><span class="db" style="background:#ef5350"></span></span></div></a>
+
+<a class="navlink" href="b1_allocation.html">📅 放出予測カレンダー（週間・直近実績）→</a>
+<div class="updated">最終更新: 2026/08/10 23:50</div></div></body></html>
