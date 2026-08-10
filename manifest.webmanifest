@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "スロットデータ分析",
   "short_name": "スロット分析",
@@ -12,3 +13,19 @@
     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ]
 }
+=======
+{
+  "name": "スロットデータ分析",
+  "short_name": "スロット分析",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1923",
+  "theme_color": "#0f1923",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
+>>>>>>> 290e982d1c094bef273ef7637e89199126d8a164
