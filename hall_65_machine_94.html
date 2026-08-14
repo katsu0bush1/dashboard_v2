@@ -1,0 +1,272 @@
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        <meta name="theme-color" content="#0f1923">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="スロット分析">
+        <link rel="apple-touch-icon" href="icon-180.png">
+        <link rel="manifest" href="manifest.webmanifest">
+        <title>ネオプラネット - 楽園なんば店</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+        <style>
+        :root {
+          --bg: #0f1923; --card: #1a2735; --border: #2a3f52;
+          --text: #e0e6ed; --sub: #8899aa; --accent: #4fc3f7;
+          --green: #66bb6a; --red: #ef5350; --yellow: #ffd54f;
+          --blue: #42a5f5;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+          font-family: -apple-system, 'Helvetica Neue', sans-serif;
+          background: var(--bg); color: var(--text);
+          font-size: 14px; line-height: 1.5;
+          -webkit-font-smoothing: antialiased;
+          padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 12px; }
+        .header {
+          text-align: center; padding: 16px 0 8px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 12px;
+        }
+        .header h1 { font-size: 18px; font-weight: 700; }
+        .header .sub { color: var(--sub); font-size: 12px; margin-top: 4px; }
+        .nav {
+          display: flex; gap: 6px; overflow-x: auto; padding: 8px 0;
+          margin-bottom: 12px; -webkit-overflow-scrolling: touch;
+        }
+        .nav a {
+          flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+          background: var(--card); color: var(--sub); text-decoration: none;
+          font-size: 13px; border: 1px solid var(--border);
+          white-space: nowrap;
+        }
+        .nav a.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+        .card {
+          background: var(--card); border-radius: 12px;
+          padding: 14px; margin-bottom: 12px;
+          border: 1px solid var(--border);
+        }
+        .card h2 { font-size: 15px; margin-bottom: 10px; color: var(--accent); }
+        .card h3 { font-size: 13px; margin: 8px 0 4px; color: var(--sub); }
+        table {
+          width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        th {
+          text-align: left; padding: 6px 4px; color: var(--sub);
+          border-bottom: 1px solid var(--border); font-weight: 500;
+          font-size: 11px; white-space: nowrap;
+        }
+        td {
+          padding: 8px 4px; border-bottom: 1px solid rgba(42,63,82,0.5);
+          white-space: nowrap;
+        }
+        .plus { color: var(--green); }
+        .minus { color: var(--red); }
+        .badge {
+          display: inline-block; padding: 2px 8px; border-radius: 10px;
+          font-size: 11px; font-weight: 600;
+        }
+        .badge-high { background: rgba(102,187,106,0.2); color: var(--green); }
+        .badge-mid { background: rgba(255,213,79,0.2); color: var(--yellow); }
+        .badge-low { background: rgba(239,83,80,0.2); color: var(--red); }
+        .chart-wrap { position: relative; width: 100%; height: 250px; margin: 8px 0; }
+        .kpi-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .kpi {
+          flex: 1; background: var(--card); border-radius: 10px;
+          padding: 12px; text-align: center;
+          border: 1px solid var(--border);
+        }
+        .kpi .value { font-size: 22px; font-weight: 700; }
+        .kpi .label { font-size: 11px; color: var(--sub); margin-top: 2px; }
+        .tag {
+          display: inline-block; padding: 2px 6px; border-radius: 4px;
+          font-size: 11px; margin: 1px;
+        }
+        .updated { text-align: center; color: var(--sub); font-size: 11px; padding: 12px; }
+
+.tabs{display:flex;gap:3px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:20;flex-wrap:wrap;}
+.tab{flex:1;min-width:66px;padding:9px 2px;text-align:center;border-radius:8px;background:var(--card);color:var(--sub);font-size:11px;cursor:pointer;border:1px solid var(--border);user-select:none;}
+.tab.active{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+/* パネルは初期表示のまま（parse時に可視）→Chart.jsが正しいサイズで初期化。
+   load後にJSで非activeを畳む。canvasは一度描画済みなので再表示でサイズ維持 */
+.tabpane{display:block;}
+.tabpane.tab-hidden{display:none;}
+.pfbtns{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;}
+.pfbtn{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:11px;cursor:pointer;}
+.pfbtn.active{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.detail-grid .kpi{padding:10px;}
+.unit-strong{background:rgba(102,187,106,0.1);}
+.unit-weak{background:rgba(239,83,80,0.1);}
+.crumb{font-size:12px;color:var(--sub);margin-bottom:8px;}
+
+        </style>
+        </head>
+        <body>
+        <div class="container">
+<div class="header"><h1>スマスロネオプラネット</h1><div class="sub">楽園なんば店 | 台番号別分析</div></div><div class="crumb"><a href="hall_65_machines.html" style="color:var(--accent)">機種一覧</a> &gt; <span style="color:var(--text)">ネオプラネット</span></div><div class="tabs"><div class="tab active" onclick="showTab(0)">🗓️ ヒート/スランプ</div><div class="tab" onclick="showTab(1)">🌙 前日一覧</div><div class="tab" onclick="showTab(2)">📈 成績</div><div class="tab" onclick="showTab(3)">📅 傾向</div><div class="tab" onclick="showTab(4)">🎯 今日狙う</div><div class="tab" onclick="showTab(5)">🎰 設定・据置</div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--green)"><h2 style="color:var(--green)">🗓️ 台番号×日付 ヒートマップ</h2><div style="display:flex;gap:6px;margin-bottom:6px" id="hm_65_94_btns"><button onclick="switchHeat_hm_65_94('payout')" id="hm_65_94_b_payout" class="heatbtn active" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--accent);color:#000;font-weight:600;font-size:12px">差枚</button><button onclick="switchHeat_hm_65_94('ratio')" id="hm_65_94_b_ratio" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">出率</button><button onclick="switchHeat_hm_65_94('win')" id="hm_65_94_b_win" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">勝敗</button><button onclick="switchHeat_hm_65_94('games')" id="hm_65_94_b_games" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">稼働</button><button onclick="switchHeat_hm_65_94('combo')" id="hm_65_94_b_combo" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">3指標</button></div><p style="font-size:11px;color:var(--sub);margin-bottom:6px" id="hm_65_94_desc">直近9日。緑=プラス/赤=マイナス（濃いほど大）。横スクロール可</p><div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="font-size:10px;border-collapse:collapse" id="hm_65_94_table"><tbody id="hm_65_94_tbody"><tr id="hm_65_94_header"><th style="position:sticky;left:0;z-index:2;min-width:44px;cursor:pointer;user-select:none;background:var(--card)" onclick="sortCol_hm_65_94('unit')" id="hm_65_94_h_unit" title="台番号でソート">台 <span id="hm_65_94_a_unit" style="font-size:9px"></span></th><th style="min-width:42px;cursor:pointer;user-select:none;background:var(--card)" onclick="sortCol_hm_65_94('avg')" id="hm_65_94_avghdr" title="平均でソート"><span id="hm_65_94_avglabel">平均差枚</span> <span id="hm_65_94_a_avg" style="font-size:9px">▼</span></th><th style="min-width:36px;cursor:pointer;user-select:none" onclick="sortCol_hm_65_94('win')" id="hm_65_94_h_win" title="勝率でソート">勝率 <span id="hm_65_94_a_win" style="font-size:9px"></span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">4/8</span><br><span style="color:var(--sub);font-size:9px">水</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">4/7</span><br><span style="color:var(--sub);font-size:9px">火</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">4/6</span><br><span style="color:var(--sub);font-size:9px">月</span></th><th style="min-width:34px;text-align:center"><span style="color:#ef5350">4/5</span><br><span style="color:#ef5350;font-size:9px">日</span></th><th style="min-width:34px;text-align:center"><span style="color:#4fc3f7">4/4</span><br><span style="color:#4fc3f7;font-size:9px">土</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">4/3</span><br><span style="color:var(--sub);font-size:9px">金</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">4/2</span><br><span style="color:var(--sub);font-size:9px">木</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">4/1</span><br><span style="color:var(--sub);font-size:9px">水</span></th><th style="min-width:34px;text-align:center"><span style="color:var(--sub)">3/31</span><br><span style="color:var(--sub);font-size:9px">火</span></th></tr><tr id="hm_65_94_daysum" style="background:rgba(79,195,247,0.06)"><td colspan="3" style="position:sticky;left:0;z-index:1;background:var(--card);text-align:right;font-size:9px;color:var(--sub);line-height:1.25">差枚<br>出率<br>勝率</td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--green);font-weight:700">+1,080</span><br><span style="color:var(--sub)">113%</span><br><span style="color:#ffd54f">100%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--red);font-weight:700">-350</span><br><span style="color:var(--sub)">80%</span><br><span style="color:#ffd54f">0%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--green);font-weight:700">+360</span><br><span style="color:var(--sub)">104%</span><br><span style="color:#ffd54f">100%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--red);font-weight:700">-460</span><br><span style="color:var(--sub)">93%</span><br><span style="color:#ffd54f">0%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--red);font-weight:700">-3,690</span><br><span style="color:var(--sub)">71%</span><br><span style="color:#ffd54f">0%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--green);font-weight:700">+1,720</span><br><span style="color:var(--sub)">141%</span><br><span style="color:#ffd54f">100%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--red);font-weight:700">-850</span><br><span style="color:var(--sub)">53%</span><br><span style="color:#ffd54f">0%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--red);font-weight:700">-980</span><br><span style="color:var(--sub)">74%</span><br><span style="color:#ffd54f">0%</span></td><td style="text-align:center;font-size:8px;line-height:1.25;padding:1px 2px"><span style="color:var(--green);font-weight:700">+150</span><br><span style="color:var(--sub)">105%</span><br><span style="color:#ffd54f">100%</span></td></tr><tr data-unit="137"><td style="position:sticky;left:0;background:var(--card);z-index:1;font-weight:700">137</td><td class="hm_65_94_avg" data-payout="-336" data-ratio="92.66666666666666" data-win="44" data-games="1904" style="text-align:right;font-weight:600;background:rgba(239,83,80,0.18);color:var(--text)">-336</td><td class="hm_65_94_wr" data-win="44" style="text-align:center;color:var(--sub)">44%</td><td class="hm_65_94_c" data-payout="1080" data-ratio="113.4" data-games="2684" style="text-align:right;background:rgba(102,187,106,0.32);color:var(--text)">+1,080</td><td class="hm_65_94_c" data-payout="-350" data-ratio="79.9" data-games="579" style="text-align:right;background:rgba(239,83,80,0.18);color:var(--text)">-350</td><td class="hm_65_94_c" data-payout="360" data-ratio="103.6" data-games="3354" style="text-align:right;background:rgba(102,187,106,0.19);color:var(--text)">+360</td><td class="hm_65_94_c" data-payout="-460" data-ratio="92.8" data-games="2144" style="text-align:right;background:rgba(239,83,80,0.20);color:var(--text)">-460</td><td class="hm_65_94_c" data-payout="-3690" data-ratio="70.6" data-games="4177" style="text-align:right;background:rgba(239,83,80,0.67);color:#fff">-3,690</td><td class="hm_65_94_c" data-payout="1720" data-ratio="141.2" data-games="1390" style="text-align:right;background:rgba(102,187,106,0.44);color:#fff">+1,720</td><td class="hm_65_94_c" data-payout="-850" data-ratio="53.2" data-games="605" style="text-align:right;background:rgba(239,83,80,0.28);color:var(--text)">-850</td><td class="hm_65_94_c" data-payout="-980" data-ratio="74.0" data-games="1258" style="text-align:right;background:rgba(239,83,80,0.30);color:var(--text)">-980</td><td class="hm_65_94_c" data-payout="150" data-ratio="105.3" data-games="946" style="text-align:right;background:rgba(102,187,106,0.15);color:var(--text)">+150</td></tr></tbody></table></div><p style="font-size:10px;color:var(--sub);margin-top:4px">行=台番号（選択指標の降順）/ 列=日付（新しい順）。ボタンで指標切替＆自動ソート</p><script>
+        // 3指標同時セル: 上=差枚(緑/赤)・中=出率・下=稼働。既存data属性から描画
+        function renderCombo_hm_65_94(td) {
+          var p = td.dataset.payout, r = td.dataset.ratio, g = td.dataset.games;
+          if (p === '' || p === undefined) {
+            td.style.background = 'transparent'; td.style.color = '#445'; td.textContent = '-'; return;
+          }
+          var pv = parseFloat(p);
+          var pc = pv >= 0 ? '#66bb6a' : '#ef5350';
+          td.style.background = pv >= 0 ? 'rgba(102,187,106,0.08)' : 'rgba(239,83,80,0.08)';
+          td.style.color = '#e0e6ed';
+          var rs = (r === '' || r === undefined || isNaN(parseFloat(r))) ? '-' : (parseFloat(r).toFixed(0)+'%');
+          var gs = (g === '' || g === undefined || isNaN(parseFloat(g))) ? '-' : ((parseFloat(g)/1000).toFixed(1)+'k');
+          td.innerHTML =
+            '<div style="font-weight:700;color:'+pc+'">'+(pv>=0?'+':'')+pv.toLocaleString()+'</div>'+
+            '<div style="color:#8899aa;font-size:9px">'+rs+'</div>'+
+            '<div style="color:#ffa726;font-size:9px">'+gs+'</div>';
+        }
+        function heatColor_hm_65_94(val, kind) {
+          if (val === null || val === '' || isNaN(val)) return ['transparent','#445'];
+          val = parseFloat(val);
+          if (kind === 'games') {
+            // 稼働は段階配色（黄→橙→赤）。5千以降のべた塗りを解消し帯で識別
+            if (val < 3000) return ['rgba(255,224,130,0.20)','#e0e6ed'];  // 〜3千
+            if (val < 5000) return ['rgba(255,193,7,0.38)','#e0e6ed'];    // 3千〜5千
+            if (val < 7000) return ['rgba(255,152,0,0.58)','#e0e6ed'];    // 5千〜7千
+            if (val < 8000) return ['rgba(251,140,0,0.75)','#e0e6ed'];    // 7千〜8千
+            if (val < 9000) return ['rgba(230,81,0,0.88)','#fff'];        // 8千〜9千
+            return ['rgba(183,28,28,0.95)','#fff'];                       // 9千〜
+          }
+          let norm;
+          if (kind === 'ratio') norm = Math.max(-1, Math.min(1, (val-100)/15));
+          else if (kind === 'win') norm = Math.max(-1, Math.min(1, (val-50)/50));
+          else norm = Math.max(-1, Math.min(1, val/3000));
+          let a, bg;
+          if (norm >= 0) { a = 0.12 + 0.55*norm; bg = 'rgba(102,187,106,'+a.toFixed(2)+')'; }
+          else { a = 0.12 + 0.55*(-norm); bg = 'rgba(239,83,80,'+a.toFixed(2)+')'; }
+          let fg = Math.abs(norm) > 0.5 ? '#fff' : '#e0e6ed';
+          return [bg, fg];
+        }
+        function fmtCell_hm_65_94(val, kind) {
+          if (val === null || val === '' || isNaN(val)) return '-';
+          val = parseFloat(val);
+          if (kind === 'ratio') return val.toFixed(0)+'%';
+          if (kind === 'win') return val.toFixed(0)+'%';
+          if (kind === 'games') return (val/1000).toFixed(1)+'k';
+          return (val>=0?'+':'')+val.toLocaleString();
+        }
+        window.hm_65_94_sortCol = 'avg';
+        window.hm_65_94_sortDir = 'desc';
+        // 列ソート（スプレッドシート風。同じ列再クリックで昇降反転）
+        function sortCol_hm_65_94(col) {
+          if (window.hm_65_94_sortCol === col) {
+            window.hm_65_94_sortDir = (window.hm_65_94_sortDir === 'desc') ? 'asc' : 'desc';
+          } else {
+            window.hm_65_94_sortCol = col;
+            window.hm_65_94_sortDir = (col === 'unit') ? 'asc' : 'desc';
+          }
+          applySort_hm_65_94();
+          updateSortIndicators_hm_65_94();
+        }
+        function getSortVal_hm_65_94(row, col) {
+          if (col === 'unit') return parseFloat(row.dataset.unit);
+          if (col === 'win') {
+            var w = row.querySelector('.hm_65_94_wr');
+            return w ? parseFloat(w.dataset.win) : -1e9;
+          }
+          // avg: 現在の指標に応じた平均
+          var kind = window.hm_65_94_kind || 'payout';
+          var c = row.querySelector('.hm_65_94_avg');
+          if (!c) return -1e9;
+          var v = (kind==='ratio')?c.dataset.ratio:(kind==='win')?c.dataset.win:(kind==='games')?c.dataset.games:c.dataset.payout;
+          v = parseFloat(v);  // comboは差枚(payout)基準でソート
+          return isNaN(v) ? -1e9 : v;
+        }
+        function applySort_hm_65_94() {
+          var tbody = document.getElementById('hm_65_94_tbody');
+          var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr')).filter(function(r){return r.hasAttribute('data-unit');});
+          var col = window.hm_65_94_sortCol, dir = window.hm_65_94_sortDir;
+          rows.sort(function(a,b){
+            var va = getSortVal_hm_65_94(a, col), vb = getSortVal_hm_65_94(b, col);
+            return (dir==='asc') ? (va - vb) : (vb - va);
+          });
+          rows.forEach(function(r){ tbody.appendChild(r); });
+        }
+        function updateSortIndicators_hm_65_94() {
+          ['unit','avg','win'].forEach(function(c){
+            var el = document.getElementById('hm_65_94_a_'+c);
+            if (!el) return;
+            el.textContent = (window.hm_65_94_sortCol === c) ? (window.hm_65_94_sortDir==='desc'?'▼':'▲') : '';
+          });
+        }
+        function switchHeat_hm_65_94(kind, doSort) {
+          window.hm_65_94_kind = kind;
+          // 指標切替時は avg列基準で再ソート
+          if (doSort !== false) {
+            window.hm_65_94_sortCol = 'avg';
+            window.hm_65_94_sortDir = 'desc';
+            applySort_hm_65_94();
+            updateSortIndicators_hm_65_94();
+          }
+          // セル更新
+          document.querySelectorAll('.hm_65_94_c').forEach(function(td){
+            if (kind==='combo') { renderCombo_hm_65_94(td); return; }
+            let v = (kind==='ratio') ? td.dataset.ratio
+                  : (kind==='games') ? td.dataset.games
+                  : (kind==='win') ? (td.dataset.payout==='' ? '' : (parseFloat(td.dataset.payout)>0?100:0))
+                  : td.dataset.payout;
+            let [bg,fg] = heatColor_hm_65_94(v, kind);
+            td.style.background = bg; td.style.color = fg;
+            td.textContent = (kind==='win')
+              ? (td.dataset.payout===''?'-':(parseFloat(td.dataset.payout)>0?'○':'×'))
+              : fmtCell_hm_65_94(v, kind);
+          });
+          // 平均列更新
+          document.querySelectorAll('.hm_65_94_avg').forEach(function(td){
+            if (kind==='combo') { renderCombo_hm_65_94(td); return; }
+            let v = (kind==='ratio')?td.dataset.ratio:(kind==='win')?td.dataset.win:(kind==='games')?td.dataset.games:td.dataset.payout;
+            let [bg,fg] = heatColor_hm_65_94(v, kind);
+            td.style.background = bg; td.style.color = fg;
+            td.textContent = fmtCell_hm_65_94(v, kind);
+          });
+          // ヘッダラベル（▲▼spanを壊さないよう label spanのみ更新）・説明・ボタン
+          var avglabel = document.getElementById('hm_65_94_avglabel');
+          var desc = document.getElementById('hm_65_94_desc');
+          if (kind==='ratio') { avglabel.textContent='平均出率'; desc.textContent='出率(%)。100%超=緑（機械割超え）'; }
+          else if (kind==='win') { avglabel.textContent='勝率'; desc.textContent='○=勝ち日/×=負け日'; }
+          else if (kind==='games') { avglabel.textContent='平均G数'; desc.textContent='稼働(総回転数/千G)。黄=低〜橙(5-8千)〜赤(9千〜)=高稼働。低稼働×高出率=穴場候補'; }
+          else if (kind==='combo') { avglabel.textContent='平均(3指標)'; desc.textContent='1セルに3指標: 上=差枚(緑/赤)・中=出率・下=稼働(千G)。差枚順ソート'; }
+          else { avglabel.textContent='平均差枚'; desc.textContent='差枚。緑=プラス/赤=マイナス（濃いほど大）'; }
+          ['payout','ratio','win','games','combo'].forEach(function(k){
+            var b=document.getElementById('hm_65_94_b_'+k);
+            if(k===kind){b.style.background='var(--accent)';b.style.color='#000';b.style.fontWeight='600';}
+            else{b.style.background='var(--card)';b.style.color='var(--sub)';b.style.fontWeight='400';}
+          });
+        }
+        switchHeat_hm_65_94('payout');  // 初期描画
+        </script></div><div class="card"><h2>📉 スランプ一覧</h2><p class="note">スランプデータがありません</p></div></div><div class="tabpane"><div class="card"><h2>🌙 前日一覧（全台スランプ＋成績）</h2><p class="note">対象日 <b style="color:var(--text)">2026-01-31</b> ／ 2台中 <b style="color:var(--green)">プラス0台</b> ／ 平均差枚 <b style="color:var(--red)">-1,375</b>。差枚の高い順・横軸=1日の時系列(左:朝一→右:閉店)</p><div style="display:flex;gap:6px;margin-bottom:8px"><button onclick="pvSort('p')" id="pv_b_p" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--accent);color:#000;font-weight:600;font-size:12px">差枚順</button><button onclick="pvSort('u')" id="pv_b_u" class="heatbtn" style="flex:1;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);font-size:12px">台番号順</button></div><div id="pvGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"><div class="pvcard" data-un="159" data-p="-1330" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:700;color:var(--accent);font-size:14px">No.159</span><span style="font-weight:700;color:var(--red);font-size:14px">-1,330</span></div><div style="font-size:10px;color:var(--sub);margin:2px 0 4px">3,940G ／ 出率89% ／ BB10/RB14</div><div style="height:72px"><canvas id="pv_159"></canvas></div></div><div class="pvcard" data-un="158" data-p="-1420" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:700;color:var(--accent);font-size:14px">No.158</span><span style="font-weight:700;color:var(--red);font-size:14px">-1,420</span></div><div style="font-size:10px;color:var(--sub);margin:2px 0 4px">4,371G ／ 出率89% ／ BB12/RB12</div><div style="height:72px"><canvas id="pv_158"></canvas></div></div></div><script>var PVDATA={"159": [0, 170, 220, 230, -250, -970, -850, -1180, -1560, -2100, -2090, -1550, -990, -1120, -1350], "158": [0, -420, -300, -230, 120, 760, 430, 190, -40, -50, -240, -580, -530, -250, -830, -1370, -1570, -1440]};Object.keys(PVDATA).forEach(function(u){var pts=PVDATA[u];var fin=pts[pts.length-1];var col=fin>=0?'#66bb6a':'#ef5350';var bg=fin>=0?'rgba(102,187,106,0.12)':'rgba(239,83,80,0.12)';var el=document.getElementById('pv_'+u);if(!el){return;}new Chart(el,{type:'line',data:{labels:pts.map(function(_,i){return i;}),datasets:[{data:pts,borderColor:col,backgroundColor:bg,fill:true,tension:0.25,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(cc){return '差枚'+(cc.raw>=0?'+':'')+cc.raw;}}}},scales:{x:{display:false},y:{grid:{color:'rgba(42,63,82,0.4)'},ticks:{color:'#8899aa',maxTicksLimit:3}}}}});});function pvSort(k){var grid=document.getElementById('pvGrid');var cards=Array.prototype.slice.call(grid.querySelectorAll('.pvcard'));cards.sort(function(a,b){return (k==='u')?(parseInt(a.dataset.un)-parseInt(b.dataset.un)):(parseFloat(b.dataset.p)-parseFloat(a.dataset.p));});cards.forEach(function(cd){grid.appendChild(cd);});var bp=document.getElementById('pv_b_p'),bu=document.getElementById('pv_b_u');bp.style.background=(k==='p')?'var(--accent)':'var(--card)';bp.style.color=(k==='p')?'#000':'var(--sub)';bu.style.background=(k==='u')?'var(--accent)':'var(--card)';bu.style.color=(k==='u')?'#000':'var(--sub)';}</script></div></div><div class="tabpane"><div class="detail-grid"><div class="kpi"><div class="value ">+0</div><div class="label">平均差枚</div></div><div class="kpi"><div class="value">0.0%</div><div class="label">勝率(補正)</div></div><div class="kpi"><div class="value">0</div><div class="label">台数</div></div></div><div class="card"><h2>差枚推移（直近30日）</h2><div class="chart-wrap"><canvas id="trendChart"></canvas></div><script>
+        new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:["02-01", "02-02", "02-03", "02-04", "02-05", "02-06", "02-07", "02-08", "02-09", "02-10", "02-11", "02-12", "02-13", "02-14", "02-15", "02-16", "02-17", "02-18", "02-19", "02-20", "02-21", "02-22", "02-23", "02-24", "02-25", "02-26", "02-27", "02-28", "03-01", "03-02"],datasets:[{label:'平均差枚',data:[2370.0, 605.0, 940.0, -245.0, 1965.0, 240.0, 2000.0, 795.0, -1305.0, 1240.0, -90.0, 635.0, -515.0, -1045.0, 465.0, -235.0, -720.0, -930.0, -1080.0, -280.0, -915.0, 1455.0, 325.0, -770.0, -405.0, -715.0, 1950.0, -2815.0, -920.0, -710.0],borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,0.1)',fill:true,tension:0.3,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#8899aa',maxRotation:45,font:{size:10}}},y:{grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#8899aa'}}}}});
+        </script></div><div class="card" style="border-left:3px solid var(--accent)"><h2 style="color:var(--accent)">📊 期間別 詳細集計</h2><p style="font-size:11px;color:var(--sub);margin-bottom:8px">基準日: 2026-04-08</p><table><tr><th>期間</th><th>延べ台</th><th>平均差枚</th><th>平均出率</th><th>平均G数</th><th>勝率</th><th>+5K台</th></tr><tr><td><b>1週間</b></td><td style="color:var(--sub)">8</td><td class="minus">-396</td><td class="minus">91.1%</td><td>2,024G</td><td>37.5%</td><td>0</td></tr><tr><td><b>2週間</b></td><td style="color:var(--sub)">9</td><td class="minus">-336</td><td class="minus">92.7%</td><td>1,904G</td><td>44.4%</td><td>0</td></tr><tr><td><b>1ヶ月</b></td><td style="color:var(--sub)">9</td><td class="minus">-336</td><td class="minus">92.7%</td><td>1,904G</td><td>44.4%</td><td>0</td></tr></table><h3 style="margin-top:12px">台別 出率推移（1週/2週/1ヶ月）</h3><p style="font-size:11px;color:var(--sub);margin-bottom:4px">出率100%超=機械割超え。3期間とも高い台=安定高設定</p><table><tr><th>台番</th><th>1週</th><th>2週</th><th>1月</th><th>月差枚</th><th>月総G</th><th>日数</th></tr><tr><td><b>137</b></td><td class="minus">91.1%</td><td class="minus">92.7%</td><td class="minus">92.7%</td><td class="minus">-336</td><td style="font-size:11px">17,137</td><td style="color:var(--sub)">9</td></tr></table><p style="font-size:10px;color:var(--sub);margin-top:4px">🔥=1週/2週/1月すべて出率100%超</p><h3 style="margin-top:12px">日別 出率・総回転数（直近30日）</h3><div class="chart-wrap" style="height:200px"><canvas id="unitperiod_65_94"></canvas></div><script>
+            new Chart(document.getElementById('unitperiod_65_94'), {
+              type:'line',
+              data:{ labels:["03-31", "04-01", "04-02", "04-03", "04-04", "04-05", "04-06", "04-07", "04-08"],
+                datasets:[
+                  { label:'出率(%)', data:[105.3, 74.0, 53.2, 141.2, 70.6, 92.8, 103.6, 79.9, 113.4], borderColor:'#ffd54f',
+                     backgroundColor:'rgba(255,213,79,0.1)', fill:true, tension:0.3, pointRadius:2, yAxisID:'y' },
+                  { label:'総回転数', data:[946, 1258, 605, 1390, 4177, 2144, 3354, 579, 2684], borderColor:'#8899aa',
+                     borderDash:[4,4], tension:0.3, pointRadius:0, yAxisID:'y2' }
+                ] },
+              options:{ responsive:true, maintainAspectRatio:false,
+                interaction:{intersect:false,mode:'index'},
+                plugins:{legend:{labels:{color:'#8899aa',font:{size:10}}}},
+                scales:{
+                  x:{grid:{display:false},ticks:{color:'#8899aa',font:{size:9},maxRotation:45}},
+                  y:{position:'left',grid:{color:'rgba(42,63,82,0.5)'},ticks:{color:'#ffd54f'},title:{display:true,text:'出率%',color:'#ffd54f'}},
+                  y2:{position:'right',grid:{display:false},ticks:{color:'#8899aa'},title:{display:true,text:'総G',color:'#8899aa'}}
+                } }
+            });
+            </script></div></div><div class="tabpane"><div class="card"><h2>📅 曜日別成績（この機種）</h2><p class="note">この機種が何曜に強いか。緑=平均プラス/赤=マイナス</p><div class="chart-wrap" style="height:200px"><canvas id="dowChart"></canvas></div><script>new Chart(document.getElementById("dowChart"),{type:"bar",data:{labels:["\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1", "\u571f", "\u65e5"],datasets:[{data:[-858.0, -388.0, -583.0, -1216.0, -297.0, -327.0, 602.0],backgroundColor:["rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(239,83,80,0.7)", "rgba(102,187,106,0.7)"],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const wr=[0.556, 0.3, 0.3, 0.0, 0.222, 0.444, 0.556],n=[9, 10, 10, 9, 9, 9, 9];return "差枚"+Math.round(c.raw)+" / 勝率"+(wr[c.dataIndex]*100).toFixed(0)+"% / "+n[c.dataIndex]+"件";}}}},scales:{y:{grid:{color:"rgba(42,63,82,0.5)"},ticks:{color:"#8899aa"}},x:{grid:{display:false},ticks:{color:"#e0e6ed"}}}}});</script></div><div class="card"><h2>🎯 特定日 vs 通常日（この機種）</h2><p class="note">店の特定日=末尾1 / 末尾7 / 末尾8 / 月日ゾロ目 / 11日 / 22日 / 29日。優遇されるか</p><table><tr><th>区分</th><th>件数</th><th>平均差枚</th><th>勝率</th></tr><tr><td>特定日</td><td>27</td><td class="minus">-681</td><td>37%</td></tr><tr><td>通常日</td><td>38</td><td class="minus">-268</td><td>32%</td></tr></table></div><div class="card"><h2>🔁 台番号リピート率</h2><p style="font-size:12px">ベースのプラス率 <b>34%</b> → 前日プラス台の翌日プラス率 <b>29%</b>（21件）<br>リフト <b>0.85x</b> → 回収傾向（前日出た台は翌日回収されやすい）</p><h3>プラス率の高い台番号（5日以上）</h3><table><tr><th>台番</th><th>日数</th><th>プラス率</th><th>平均差枚</th></tr><tr><td style="font-weight:700">No.137</td><td>9</td><td>44%</td><td class="minus">-336</td></tr><tr><td style="font-weight:700">No.159</td><td>28</td><td>32%</td><td class="minus">-321</td></tr><tr><td style="font-weight:700">No.158</td><td>28</td><td>32%</td><td class="minus">-591</td></tr></table></div><div class="card"><h2>🔢 台番号末尾別成績（期間切替）</h2><p class="note">この機種の台番号末尾ごとの平均差枚・勝率。店のクセ（末尾優遇）がこの機種にも効くか</p><div class="pfbtns" id="mt_periods"><div class="pfbtn active" data-p="all">全期間</div><div class="pfbtn" data-p="d14">直近14日</div><div class="pfbtn" data-p="we">土日</div><div class="pfbtn" data-p="sp">特定日(末尾1 / 末尾7 / 末尾8 / 月日ゾロ目 / 11日 / 22日 / 29日)</div><span style="color:var(--sub);font-size:11px;align-self:center;margin:0 2px">日付末尾</span><div class="pfbtn" data-p="dg0">0</div><div class="pfbtn" data-p="dg1">1</div><div class="pfbtn" data-p="dg2">2</div><div class="pfbtn" data-p="dg3">3</div><div class="pfbtn" data-p="dg4">4</div><div class="pfbtn" data-p="dg5">5</div><div class="pfbtn" data-p="dg6">6</div><div class="pfbtn" data-p="dg7">7</div><div class="pfbtn" data-p="dg8">8</div><div class="pfbtn" data-p="dg9">9</div></div><table><thead><tr><th>末尾</th><th>件数</th><th>平均差枚</th><th>勝率</th></tr></thead><tbody id="mt_digit_body"><tr data-allp="" data-allw="" data-alln="0" data-d14p="" data-d14w="" data-d14n="0" data-wep="" data-wew="" data-wen="0" data-spp="" data-spw="" data-spn="0" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="" data-dg1w="" data-dg1n="0" data-dg2p="" data-dg2w="" data-dg2n="0" data-dg3p="" data-dg3w="" data-dg3n="0" data-dg4p="" data-dg4w="" data-dg4n="0" data-dg5p="" data-dg5w="" data-dg5n="0" data-dg6p="" data-dg6w="" data-dg6n="0" data-dg7p="" data-dg7w="" data-dg7n="0" data-dg8p="" data-dg8w="" data-dg8n="0" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末0</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="" data-allw="" data-alln="0" data-d14p="" data-d14w="" data-d14n="0" data-wep="" data-wew="" data-wen="0" data-spp="" data-spw="" data-spn="0" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="" data-dg1w="" data-dg1n="0" data-dg2p="" data-dg2w="" data-dg2n="0" data-dg3p="" data-dg3w="" data-dg3n="0" data-dg4p="" data-dg4w="" data-dg4n="0" data-dg5p="" data-dg5w="" data-dg5n="0" data-dg6p="" data-dg6w="" data-dg6n="0" data-dg7p="" data-dg7w="" data-dg7n="0" data-dg8p="" data-dg8w="" data-dg8n="0" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末1</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="" data-allw="" data-alln="0" data-d14p="" data-d14w="" data-d14n="0" data-wep="" data-wew="" data-wen="0" data-spp="" data-spw="" data-spn="0" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="" data-dg1w="" data-dg1n="0" data-dg2p="" data-dg2w="" data-dg2n="0" data-dg3p="" data-dg3w="" data-dg3n="0" data-dg4p="" data-dg4w="" data-dg4n="0" data-dg5p="" data-dg5w="" data-dg5n="0" data-dg6p="" data-dg6w="" data-dg6n="0" data-dg7p="" data-dg7w="" data-dg7n="0" data-dg8p="" data-dg8w="" data-dg8n="0" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末2</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="" data-allw="" data-alln="0" data-d14p="" data-d14w="" data-d14n="0" data-wep="" data-wew="" data-wen="0" data-spp="" data-spw="" data-spn="0" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="" data-dg1w="" data-dg1n="0" data-dg2p="" data-dg2w="" data-dg2n="0" data-dg3p="" data-dg3w="" data-dg3n="0" data-dg4p="" data-dg4w="" data-dg4n="0" data-dg5p="" data-dg5w="" data-dg5n="0" data-dg6p="" data-dg6w="" data-dg6n="0" data-dg7p="" data-dg7w="" data-dg7n="0" data-dg8p="" data-dg8w="" data-dg8n="0" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末3</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="" data-allw="" data-alln="0" data-d14p="" data-d14w="" data-d14n="0" data-wep="" data-wew="" data-wen="0" data-spp="" data-spw="" data-spn="0" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="" data-dg1w="" data-dg1n="0" data-dg2p="" data-dg2w="" data-dg2n="0" data-dg3p="" data-dg3w="" data-dg3n="0" data-dg4p="" data-dg4w="" data-dg4n="0" data-dg5p="" data-dg5w="" data-dg5n="0" data-dg6p="" data-dg6w="" data-dg6n="0" data-dg7p="" data-dg7w="" data-dg7n="0" data-dg8p="" data-dg8w="" data-dg8n="0" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末4</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="" data-allw="" data-alln="0" data-d14p="" data-d14w="" data-d14n="0" data-wep="" data-wew="" data-wen="0" data-spp="" data-spw="" data-spn="0" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="" data-dg1w="" data-dg1n="0" data-dg2p="" data-dg2w="" data-dg2n="0" data-dg3p="" data-dg3w="" data-dg3n="0" data-dg4p="" data-dg4w="" data-dg4n="0" data-dg5p="" data-dg5w="" data-dg5n="0" data-dg6p="" data-dg6w="" data-dg6n="0" data-dg7p="" data-dg7w="" data-dg7n="0" data-dg8p="" data-dg8w="" data-dg8n="0" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末5</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="" data-allw="" data-alln="0" data-d14p="" data-d14w="" data-d14n="0" data-wep="" data-wew="" data-wen="0" data-spp="" data-spw="" data-spn="0" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="" data-dg1w="" data-dg1n="0" data-dg2p="" data-dg2w="" data-dg2n="0" data-dg3p="" data-dg3w="" data-dg3n="0" data-dg4p="" data-dg4w="" data-dg4n="0" data-dg5p="" data-dg5w="" data-dg5n="0" data-dg6p="" data-dg6w="" data-dg6n="0" data-dg7p="" data-dg7w="" data-dg7n="0" data-dg8p="" data-dg8w="" data-dg8n="0" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末6</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="-336" data-allw="44" data-alln="9" data-d14p="" data-d14w="" data-d14n="0" data-wep="-2075" data-wew="0" data-wen="2" data-spp="-758" data-spw="40" data-spn="5" data-dg0p="" data-dg0w="" data-dg0n="0" data-dg1p="-415" data-dg1w="50" data-dg1n="2" data-dg2p="-850" data-dg2w="0" data-dg2n="1" data-dg3p="1720" data-dg3w="100" data-dg3n="1" data-dg4p="-3690" data-dg4w="0" data-dg4n="1" data-dg5p="-460" data-dg5w="0" data-dg5n="1" data-dg6p="360" data-dg6w="100" data-dg6n="1" data-dg7p="-350" data-dg7w="0" data-dg7n="1" data-dg8p="1080" data-dg8w="100" data-dg8n="1" data-dg9p="" data-dg9w="" data-dg9n="0"><td style="font-weight:700">末7</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="-591" data-allw="32" data-alln="28" data-d14p="" data-d14w="" data-d14n="0" data-wep="-126" data-wew="50" data-wen="8" data-spp="-1017" data-spw="36" data-spn="11" data-dg0p="-980" data-dg0w="0" data-dg0n="3" data-dg1p="-2647" data-dg1w="0" data-dg1n="3" data-dg2p="280" data-dg2w="50" data-dg2n="2" data-dg3p="-1250" data-dg3w="0" data-dg3n="2" data-dg4p="270" data-dg4w="33" data-dg4n="3" data-dg5p="1203" data-dg5w="67" data-dg5n="3" data-dg6p="-1427" data-dg6w="0" data-dg6n="3" data-dg7p="703" data-dg7w="100" data-dg7n="3" data-dg8p="-943" data-dg8w="33" data-dg8n="3" data-dg9p="-1047" data-dg9w="33" data-dg9n="3"><td style="font-weight:700">末8</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr><tr data-allp="-321" data-allw="32" data-alln="28" data-d14p="" data-d14w="" data-d14n="0" data-wep="955" data-wew="62" data-wen="8" data-spp="-310" data-spw="36" data-spn="11" data-dg0p="-820" data-dg0w="33" data-dg0n="3" data-dg1p="53" data-dg1w="33" data-dg1n="3" data-dg2p="-1845" data-dg2w="0" data-dg2n="2" data-dg3p="-2190" data-dg3w="0" data-dg3n="2" data-dg4p="3130" data-dg4w="67" data-dg4n="3" data-dg5p="-2057" data-dg5w="0" data-dg5n="3" data-dg6p="1343" data-dg6w="67" data-dg6n="3" data-dg7p="1447" data-dg7w="100" data-dg7n="3" data-dg8p="-1830" data-dg8w="0" data-dg8n="3" data-dg9p="-1577" data-dg9w="0" data-dg9n="3"><td style="font-weight:700">末9</td><td class="mtn"></td><td class="mtp"></td><td class="mtw"></td></tr></tbody></table><script>(function(){function mt(pk){document.querySelectorAll("#mt_periods .pfbtn").forEach(function(b){b.classList.toggle("active",b.dataset.p===pk);});document.querySelectorAll("#mt_digit_body tr").forEach(function(tr){var n=tr.dataset[pk+"n"]||"0",p=tr.dataset[pk+"p"],w=tr.dataset[pk+"w"];tr.querySelector(".mtn").textContent=n;var pc=tr.querySelector(".mtp");if(p===""||p===undefined){pc.textContent="-";pc.className="mtp";}else{var pv=parseInt(p,10);pc.textContent=(pv>=0?"+":"")+pv.toLocaleString();pc.className="mtp "+(pv>=0?"plus":"minus");}tr.querySelector(".mtw").textContent=(w===""||w===undefined)?"-":w+"%";});}document.querySelectorAll("#mt_periods .pfbtn").forEach(function(b){b.onclick=function(){mt(b.dataset.p);};});mt("all");})();</script></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--yellow)"><h2 style="color:var(--yellow)">🎯 今日狙う台（2026-08-11予想）</h2><p class="note">ホール全機種を横断して同じ物差しで順位付けした結果から、<b>この機種の台だけ</b>を抜き出しています。<b>前日以前のデータのみ使用（リークなし）</b>　実測: 選抜は当日平均を平均<b>+81枚</b>上回る(未来検証)</p><p class="note">最新日に稼働している台が無いか、履歴が不足しています（新装・移設の直後など）。<a href="hall_65.html" style="color:var(--accent)">→ ホールの「今日狙う」</a></p></div></div><div class="tabpane"><div class="card" style="border-left:3px solid var(--yellow)"><h2 style="color:var(--yellow)">🎰 設定推測・据え置き・連続性（直近14日）</h2><p style="font-size:12px;margin-bottom:8px">📌 据え置き傾向: <span style="color:var(--red)">回収型（前日好調台の翌日継続22%）→ 前日プラス台は避ける</span>（母数9件）</p><table><tr><th>台番</th><th>推定設定</th><th>平均出率</th><th>合成確率</th><th>連続</th></tr><tr><td style="font-weight:700">137</td><td style="color:#ef5350;font-size:11px">設定1-2</td><td>92.7%</td><td>-</td><td><span style="color:var(--green)">+1連</span></td></tr></table><p style="font-size:10px;color:var(--sub);margin-top:4px">推定設定=出率ベース（理論値未登録）/ 合成確率=総G÷(BB+RB) / 連続=直近の連続勝敗</p></div></div><script>function showTab(i){document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("active",i===j));document.querySelectorAll(".tabpane").forEach((p,j)=>p.classList.toggle("tab-hidden",i!==j));window.dispatchEvent(new Event("resize"));}window.addEventListener("load",function(){showTab(0);});</script><div class="updated">最終更新: 2026/08/14 18:10</div>
+</div>
+</body>
+</html>
