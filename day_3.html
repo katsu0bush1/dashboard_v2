@@ -42,15 +42,19 @@ tr:hover{background:rgba(79,195,247,.06);}
 <div class="card"><div class="kpis" id="kpis"></div></div>
 <div class="card"><h2 style="font-size:14px;color:var(--accent);margin-bottom:6px">🎰 機種ランキング（差枚順）</h2>
   <div style="overflow-x:auto"><table id="mtbl"><thead><tr>
-    <th>#</th><th>機種</th><th>台数</th><th>平均差枚</th><th>平均G</th><th>出率</th><th>勝率</th>
+    <th>#</th><th class="sortable" data-k="nm">機種</th><th class="sortable" data-k="u">台数</th>
+    <th class="sortable" data-k="p">平均差枚</th><th class="sortable" data-k="g">平均G</th>
+    <th class="sortable" data-k="r">出率</th><th class="sortable" data-k="w">勝率</th>
   </tr></thead><tbody></tbody></table></div>
-  <p class="note">機種名をタップすると機種個別ページへ移動します</p>
+  <p class="note">機種名をタップすると機種個別ページへ移動します／
+  <b>列見出しをタップで並べ替え</b>（もう一度で昇順・降順が入れ替わります）</p>
 </div>
 <div class="card"><h2 style="font-size:14px;color:var(--accent);margin-bottom:6px">🔢 末尾別（台別データがある日のみ）</h2>
   <div style="overflow-x:auto"><table id="dtbl"><thead><tr>
     <th>末尾</th><th>平均差枚</th><th>台数</th></tr></thead><tbody></tbody></table></div>
 </div>
-<div class="sub">最終更新: 2026/08/27 14:08 ／ 収録 30 日分</div>
+<a href="help.html" style="display:block;text-align:center;color:#4fc3f7;font-size:12px;padding:12px 10px;text-decoration:none">📖 この画面の見方（各項目の意味と根拠）→</a>
+<div class="sub">最終更新: 2026/08/28 20:44 ／ 収録 30 日分</div>
 </div>
 <script>
 const HID=3;
@@ -58,6 +62,47 @@ const D={"20260822": {"dow": "土", "units": 543, "avg": -93, "total": -50574, "
 const KEYS=["20260822", "20260821", "20260820", "20260819", "20260818", "20260817", "20260816", "20260815", "20260814", "20260813", "20260812", "20260811", "20260810", "20260809", "20260808", "20260807", "20260806", "20260805", "20260804", "20260803", "20260802", "20260801", "20260731", "20260730", "20260729", "20260728", "20260727", "20260726", "20260725", "20260724"];
 const fmt=n=>n==null?'-':(n>0?'+':'')+n.toLocaleString();
 const cls=n=>n==null?'':(n>0?'plus':(n<0?'minus':''));
+/* ---- 機種ランキングの並べ替え（2026-08-28 ユーザー依頼）----------------------
+   既定は差枚の降順（見出しの「差枚順」と一致させる）。
+   ⚠️ null は**常に最後**へ送る。数値と混ぜて比較すると、欠測の機種が
+      「最強」または「最弱」として上位に並ぶ（G数は古い期間が丸ごと欠測しうる）。
+   ⚠️ 並べ替えても # 列は「その並びでの順位」を出す（元の差枚順位ではない）。 */
+/* ⚠️ 機種名は**外部サイト由来**。`insertAdjacentHTML` にそのまま入れない。
+   `_js()` の < 置換は JSON ソース上の対策で、JS がパースした時点で実文字に戻るため無効。
+   実データに `&` を含む機種名が4件ある（`… with OZS-1000 & RAPHAEL` 等）。 */
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* ⚠️ `x ? … : '-'` は **0 を欠測として消す**。実測で avg_games_per_unit=0 が 4,986件、
+   win_rate NULL が 9件ある。「実値0」と「欠測」を混ぜない（build 側のコメントと同じ規律）。 */
+const num=v=>v==null?'-':Number(v).toLocaleString();
+let SORT={k:'p',dir:-1};
+function cmpVal(a,b,k,dir){
+  const x=a[k], y=b[k];
+  const xn=(x==null||x===''), yn=(y==null||y==='');
+  if(xn&&yn) return 0;
+  if(xn) return 1;              // 欠測は常に末尾
+  if(yn) return -1;
+  if(k==='nm') return dir*String(x).localeCompare(String(y),'ja');
+  return dir*(Number(x)-Number(y));
+}
+function renderMachines(d){
+  const rows=d.machines.slice().sort((a,b)=>cmpVal(a,b,SORT.k,SORT.dir));
+  const tb=document.querySelector('#mtbl tbody'); tb.innerHTML='';
+  rows.forEach((m,i)=>{
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td>${i+1}</td>`+
+      `<td><a href="hall_${HID}_machine_${m.mid}.html">${esc(m.nm)}</a></td>`+
+      `<td>${num(m.u)}</td><td class="${cls(m.p)}">${fmt(m.p)}</td>`+
+      `<td>${num(m.g)}</td><td>${m.r==null?'-':m.r+'%'}</td>`+
+      `<td>${m.w==null?'-':m.w+'%'}</td></tr>`);
+  });
+  document.querySelectorAll('#mtbl th.sortable').forEach(th=>{
+    const on=th.dataset.k===SORT.k;
+    th.style.color=on?'var(--accent)':'';
+    th.dataset.arrow=on?(SORT.dir<0?' ▼':' ▲'):'';
+    th.textContent=th.textContent.replace(/[ ▼▲]+$/,'')+(th.dataset.arrow||'');
+  });
+}
 function render(k){
   const d=D[k]; if(!d) return;
   const ymd=k.slice(0,4)+'-'+k.slice(4,6)+'-'+k.slice(6,8);
@@ -79,14 +124,7 @@ function render(k){
     diff+
     `<div class="kpi"><div class="v">${d.units}</div><div class="l">台数</div></div>`+
     `<div class="kpi"><div class="v">${d.machines.length}</div><div class="l">機種数</div></div>`;
-  const tb=document.querySelector('#mtbl tbody'); tb.innerHTML='';
-  d.machines.forEach((m,i)=>{
-    tb.insertAdjacentHTML('beforeend',
-      `<tr><td>${i+1}</td>`+
-      `<td><a href="hall_${HID}_machine_${m.mid}.html">${m.nm}</a></td>`+
-      `<td>${m.u??'-'}</td><td class="${cls(m.p)}">${fmt(m.p)}</td>`+
-      `<td>${m.g?m.g.toLocaleString():'-'}</td><td>${m.r??'-'}%</td><td>${m.w}%</td></tr>`);
-  });
+  renderMachines(d);
   const dt=document.querySelector('#dtbl tbody'); dt.innerHTML='';
   if(!d.digits.length){
     // みんレポは台別(daily_data)が機種別(machine_daily_summary)より1日遅れることがあるため、
@@ -109,6 +147,16 @@ KEYS.forEach(k=>{const o=document.createElement('option');o.value=k;
   o.textContent=k.slice(4,6)+'/'+k.slice(6,8)+'('+D[k].dow+')'+(D[k].sp?' ★特定日':'');
   sel.appendChild(o);});
 sel.onchange=()=>render(sel.value);
+/* 列見出しで並べ替え。同じ列を再タップで昇順/降順を反転。
+   ⚠️ 機種名だけ既定を昇順にする（あいうえお順が自然）。数値は降順が自然。 */
+document.querySelectorAll('#mtbl th.sortable').forEach(th=>{
+  th.style.cursor='pointer';
+  th.onclick=()=>{
+    const k=th.dataset.k;
+    SORT = (SORT.k===k) ? {k:k, dir:-SORT.dir} : {k:k, dir:(k==='nm'?1:-1)};
+    const d=D[sel.value]; if(d) renderMachines(d);
+  };
+});
 document.getElementById('prev').onclick=()=>{const i=KEYS.indexOf(sel.value);if(i<KEYS.length-1)render(KEYS[i+1]);};
 document.getElementById('next').onclick=()=>{const i=KEYS.indexOf(sel.value);if(i>0)render(KEYS[i-1]);};
 const q=new URLSearchParams(location.search).get('d');
